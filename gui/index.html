@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hermes Control Center</title>
+  <link rel="stylesheet" href="/gui/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Hermes Project</p>
+        <h1>Control Center</h1>
+        <p class="subtitle">OpenCode와 연결된 Hermes 브리지를 브라우저에서 바로 제어합니다.</p>
+      </div>
+      <div class="status-card">
+        <span class="status-label">Bridge</span>
+        <strong id="bridge-mode">loading</strong>
+        <span id="runtime-status" class="pill">checking</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Quick Control</h2>
+          <button id="refresh-button" class="ghost">새로고침</button>
+        </div>
+        <div class="button-row">
+          <button id="start-button" class="primary">Start</button>
+          <button id="stop-button" class="danger">Stop</button>
+        </div>
+        <dl class="facts">
+          <div>
+            <dt>Mode</dt>
+            <dd id="mode-value">-</dd>
+          </div>
+          <div>
+            <dt>Running</dt>
+            <dd id="running-value">-</dd>
+          </div>
+          <div>
+            <dt>Last Prompt</dt>
+            <dd id="last-prompt-value">-</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Send Instruction</h2>
+        </div>
+        <label class="field">
+          <span>Prompt</span>
+          <textarea id="prompt-input" rows="7" placeholder="Hermes에 보낼 명령을 입력하세요."></textarea>
+        </label>
+        <label class="field">
+          <span>Context</span>
+          <input id="context-input" type="text" placeholder="선택 사항" />
+        </label>
+        <button id="send-button" class="accent">Send To Hermes</button>
+        <pre id="response-box" class="response">응답이 여기에 표시됩니다.</pre>
+      </article>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-head">
+        <h2>Recent Activity</h2>
+      </div>
+      <div id="event-list" class="event-list"></div>
+    </section>
+  </main>
+
+  <script src="/gui/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Claude Code 로컬 설정 (개인 권한 포함)
+.claude/
+
+# 개인정보 및 시크릿
+.env
+*.key
+*.pem
+*.p12
+secrets.json
+credentials.json
+
+# 로그 파일
+*.log
+bridge.log
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# 가상환경
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js (gui/)
+node_modules/
+npm-debug.log*

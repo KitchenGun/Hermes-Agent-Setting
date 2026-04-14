@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "hermes": {
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "E:\\Hermes Agent Setting\\run_bridge.ps1"
+      ],
+      "env": {
+        "HERMES_MODE": "mock"
+      }
+    }
+  }
+}
