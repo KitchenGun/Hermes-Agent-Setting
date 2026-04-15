@@ -3,33 +3,18 @@ import json
 import os
 import urllib.error
 import urllib.request
-from pathlib import Path
 from typing import Any
 
 import discord
 
+from env_loader import load_env_file
+
 
 BRIDGE_URL = "http://127.0.0.1:8765/api/discord/execute"
-ENV_FILE = Path(__file__).with_name(".env")
 BRIDGE_TIMEOUT_SECONDS = 180
 PREPARING_DELAY_SECONDS = 10
 MAX_CONTEXT_TURNS = 6
 CONVERSATION_HISTORY: dict[tuple[int, int], list[dict[str, str]]] = {}
-
-
-def load_env_file() -> None:
-    if not ENV_FILE.exists():
-        return
-
-    for raw_line in ENV_FILE.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
 
 
 def normalize_message_content(message: discord.Message, bot_user_id: int) -> str:
@@ -68,17 +53,20 @@ def build_conversation_context(message: discord.Message) -> str:
     for turn in history[-MAX_CONTEXT_TURNS:]:
         user_text = turn.get("user", "").strip()
         bot_text = turn.get("bot", "").strip()
+        hidden_context = turn.get("context", "").strip()
         if user_text:
             lines.append(f"User: {user_text}")
         if bot_text:
             lines.append(f"Agent: {bot_text}")
+        if hidden_context:
+            lines.append(f"System memory: {hidden_context}")
     return "\n".join(lines)
 
 
-def remember_turn(message: discord.Message, user_text: str, bot_text: str) -> None:
+def remember_turn(message: discord.Message, user_text: str, bot_text: str, hidden_context: str = "") -> None:
     key = conversation_key(message)
     history = CONVERSATION_HISTORY.setdefault(key, [])
-    history.append({"user": user_text.strip(), "bot": bot_text.strip()})
+    history.append({"user": user_text.strip(), "bot": bot_text.strip(), "context": hidden_context.strip()})
     del history[:-MAX_CONTEXT_TURNS]
 
 
@@ -166,7 +154,12 @@ class HermesDiscordBot(discord.Client):
 
         await deliver_response(message, result)
         if str(result.get("action", "")).strip().lower() != "ignore":
-            remember_turn(message, normalized_input, str(result.get("response", "") or ""))
+            remember_turn(
+                message,
+                normalized_input,
+                str(result.get("response", "") or ""),
+                str(result.get("context_update", "") or ""),
+            )
 
 
 def main() -> int:

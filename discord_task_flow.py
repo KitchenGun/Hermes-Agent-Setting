@@ -1,5 +1,21 @@
 import json
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from typing import Any
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # pragma: no cover
+    ZoneInfo = None
+
+from calendar_manager_agent import DEFAULT_TIMEZONE
+from calendar_manager_agent import build_calendar_manager_execution_prompt
+from calendar_manager_agent import extract_calendar_user_message
+from calendar_manager_agent import is_calendar_request
+from calendar_manager_agent import now_iso
+from google_calendar_integration import execute_calendar_plan
+from google_calendar_integration import parse_calendar_plan
 
 
 COMMAND_PREFIXES = ("!task", "!run", "!agent")
@@ -74,6 +90,8 @@ Rules:
 - No hallucination.
 - If a tool is required, assume it is available.
 - Keep output concise.
+- Resolve omitted references from relevant conversation context before declaring missing identifiers.
+- If the current request is a follow-up like "that one", "those schedules", or "after the afternoon", use the provided context to recover the target and time range.
 - Return JSON only.
 - Do not wrap JSON in markdown fences.
 """
@@ -121,6 +139,35 @@ def _default_response(action: str, task: str, response: str, visibility: str = "
         "response": response,
         "visibility": visibility,
     }
+
+
+def _calendar_context_update(plan: dict[str, Any], execution: dict[str, Any] | None = None) -> str:
+    entities = plan.get("entities", {}) if isinstance(plan.get("entities"), dict) else {}
+    normalized_time = plan.get("normalized_time", {}) if isinstance(plan.get("normalized_time"), dict) else {}
+    tool_request = plan.get("tool_request", {}) if isinstance(plan.get("tool_request"), dict) else {}
+
+    summary: dict[str, Any] = {
+        "kind": "calendar_memory",
+        "intent": str(plan.get("intent") or "").strip(),
+        "status": str(plan.get("status") or "").strip(),
+        "user_request_summary": str(plan.get("user_request_summary") or "").strip(),
+        "title": entities.get("title"),
+        "event_reference": entities.get("event_reference"),
+        "calendar_target": entities.get("calendar_target"),
+        "normalized_time": {
+            "timezone": normalized_time.get("timezone"),
+            "start": normalized_time.get("start"),
+            "end": normalized_time.get("end"),
+            "date_text_resolution": normalized_time.get("date_text_resolution"),
+        },
+        "required_data": plan.get("required_data", []),
+        "tool_request": tool_request,
+    }
+    if execution is not None:
+        summary["executed"] = bool(execution.get("executed"))
+        summary["execution_status"] = str(execution.get("status") or "").strip()
+        summary["user_message"] = str(execution.get("user_message") or "").strip()
+    return json.dumps(summary, ensure_ascii=False)
 
 
 def _normalize_visibility(value: Any) -> str:
@@ -207,6 +254,14 @@ def _parse_hermes_json_text(text: str) -> dict[str, Any] | None:
 
 
 def _discord_reply_from_hermes(parsed_task: str, hermes_result: dict[str, Any]) -> dict[str, str]:
+    calendar_execution = execute_calendar_plan(hermes_result["result"])
+    if calendar_execution is not None:
+        return _default_response("reply", parsed_task, str(calendar_execution.get("user_message", "") or "캘린더 요청을 처리했습니다."), "public")
+
+    calendar_message = extract_calendar_user_message(hermes_result["result"])
+    if calendar_message:
+        return _default_response("reply", parsed_task, calendar_message, "public")
+
     if hermes_result["status"] == "success":
         response = hermes_result["result"] or "작업이 완료되었습니다"
         return _default_response("reply", parsed_task, response, "public")
@@ -234,6 +289,20 @@ def normalize_discord_execution(adapter_result: dict[str, Any], parsed_task: str
         for key in ("result", "raw"):
             value = response.get(key)
             if isinstance(value, str):
+                calendar_execution = execute_calendar_plan(value)
+                if calendar_execution is not None:
+                    result = _default_response("reply", parsed_task, str(calendar_execution.get("user_message", "") or "캘린더 요청을 처리했습니다."), "public")
+                    plan = calendar_execution.get("plan")
+                    if isinstance(plan, dict):
+                        result["context_update"] = _calendar_context_update(plan, calendar_execution)
+                    return result
+                calendar_message = extract_calendar_user_message(value)
+                if calendar_message:
+                    result = _default_response("reply", parsed_task, calendar_message, "public")
+                    plan = parse_calendar_plan(value)
+                    if isinstance(plan, dict):
+                        result["context_update"] = _calendar_context_update(plan)
+                    return result
                 hermes_parsed = _parse_hermes_json_text(value)
                 if hermes_parsed is not None:
                     return _discord_reply_from_hermes(parsed_task, hermes_parsed)
@@ -244,6 +313,20 @@ def normalize_discord_execution(adapter_result: dict[str, Any], parsed_task: str
     for key in ("stdout", "echo", "message", "error"):
         value = adapter_result.get(key)
         if isinstance(value, str) and value.strip():
+            calendar_execution = execute_calendar_plan(value)
+            if calendar_execution is not None:
+                result = _default_response("reply", parsed_task, str(calendar_execution.get("user_message", "") or "캘린더 요청을 처리했습니다."), "public")
+                plan = calendar_execution.get("plan")
+                if isinstance(plan, dict):
+                    result["context_update"] = _calendar_context_update(plan, calendar_execution)
+                return result
+            calendar_message = extract_calendar_user_message(value)
+            if calendar_message:
+                result = _default_response("reply", parsed_task, calendar_message, "public")
+                plan = parse_calendar_plan(value)
+                if isinstance(plan, dict):
+                    result["context_update"] = _calendar_context_update(plan)
+                return result
             hermes_parsed = _parse_hermes_json_text(value)
             if hermes_parsed is not None:
                 return _discord_reply_from_hermes(parsed_task, hermes_parsed)
@@ -253,6 +336,20 @@ def normalize_discord_execution(adapter_result: dict[str, Any], parsed_task: str
 
     result_text = adapter_result.get("result_text")
     if isinstance(result_text, str) and result_text.strip():
+        calendar_execution = execute_calendar_plan(result_text)
+        if calendar_execution is not None:
+            result = _default_response("reply", parsed_task, str(calendar_execution.get("user_message", "") or "캘린더 요청을 처리했습니다."), "public")
+            plan = calendar_execution.get("plan")
+            if isinstance(plan, dict):
+                result["context_update"] = _calendar_context_update(plan, calendar_execution)
+            return result
+        calendar_message = extract_calendar_user_message(result_text)
+        if calendar_message:
+            result = _default_response("reply", parsed_task, calendar_message, "public")
+            plan = parse_calendar_plan(result_text)
+            if isinstance(plan, dict):
+                result["context_update"] = _calendar_context_update(plan)
+            return result
         hermes_parsed = _parse_hermes_json_text(result_text)
         if hermes_parsed is not None:
             return _discord_reply_from_hermes(parsed_task, hermes_parsed)
@@ -289,7 +386,33 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
             return _default_response("ignore", "", "", "public")
         return _default_response("reply", "", "실행할 작업을 입력해 주세요", "ephemeral")
 
-    adapter_result = adapter.send(build_hermes_task_prompt(parsed_task, payload["user"], payload["context"]), payload["context"])
+    if ZoneInfo is not None:
+        try:
+            current_datetime = datetime.now(ZoneInfo(DEFAULT_TIMEZONE)).isoformat()
+        except Exception:
+            current_datetime = now_iso(DEFAULT_TIMEZONE)
+    else:
+        current_datetime = now_iso(DEFAULT_TIMEZONE)
+    use_orchestrator = getattr(adapter, "mode", "").strip().lower() == "opencode" and not is_calendar_request(parsed_task)
+
+    if is_calendar_request(parsed_task):
+        prompt = build_calendar_manager_execution_prompt(
+            user_input=parsed_task,
+            discord_user=payload["user"],
+            discord_channel=payload["channel"],
+            user_id=payload["user"],
+            current_datetime=current_datetime,
+            context=payload["context"],
+            timezone_name=DEFAULT_TIMEZONE,
+        )
+        adapter_result = adapter.send(prompt, payload["context"])
+    elif use_orchestrator:
+        from orchestrator import get_default_orchestrator
+
+        adapter_result = get_default_orchestrator().orchestrate(parsed_task, payload["user"], payload["context"])
+    else:
+        prompt = build_hermes_task_prompt(parsed_task, payload["user"], payload["context"])
+        adapter_result = adapter.send(prompt, payload["context"])
     normalized = normalize_discord_execution(adapter_result, parsed_task)
     if not normalized["task"]:
         normalized["task"] = parsed_task
