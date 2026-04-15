@@ -25,6 +25,7 @@ DEFAULT_KNOWLEDGE_DIR = os.getenv("HERMES_KNOWLEDGE_DIR", "knowledge").strip() o
 DEFAULT_REACTIONS_PATH = os.getenv("HERMES_REACTIONS_PATH", "reactions.json").strip() or "reactions.json"
 DEFAULT_HOT_RELOAD = os.getenv("HERMES_REGISTRY_HOT_RELOAD", "true").strip().lower() == "true"
 SUGGESTIONS_FILE = "suggestions.json"
+GENERIC_SUPPORT_SKILLS = {"code-general", "research", "document", "google-docs"}
 
 
 @dataclass(slots=True)
@@ -249,10 +250,13 @@ class HermesOrchestrator:
     ) -> dict[str, Any]:
         matched_skills = [self.skill_registry.get_skill(name) for name in subtask.required_skills]
         skills = [skill for skill in matched_skills if skill is not None]
-        match = self.agent_registry.find_best_match(subtask.task, subtask.required_skills)
+        routing_skills = self._routing_required_skills(subtask.required_skills)
+        match = self.agent_registry.find_best_match(subtask.task, routing_skills)
 
         selected_agent = match.matched_agents[0] if match.matched_agents else None
-        resolution = "specialist" if match.status == "matched" and selected_agent else "generic_fallback"
+        selected_agent_skills = set(selected_agent.skills) if selected_agent else set()
+        can_handle_routing_skills = bool(routing_skills) and set(routing_skills).issubset(selected_agent_skills)
+        resolution = "specialist" if selected_agent and (match.status == "matched" or can_handle_routing_skills) else "generic_fallback"
         if resolution == "generic_fallback":
             fallback_names = self._select_fallback_skills(subtask.task, subtask.required_skills)
             skills = [self.skill_registry.get_skill(name) for name in fallback_names]
@@ -378,6 +382,12 @@ class HermesOrchestrator:
         else:
             selected.append("code-general")
         return list(dict.fromkeys(selected))
+
+    def _routing_required_skills(self, required_skills: list[str]) -> list[str]:
+        specialized = [name for name in required_skills if name and name not in GENERIC_SUPPORT_SKILLS]
+        if specialized:
+            return specialized
+        return [name for name in required_skills if name]
 
     def _create_suggestion(
         self,
