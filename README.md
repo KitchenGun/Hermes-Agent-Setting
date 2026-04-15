@@ -43,6 +43,9 @@ cd "E:\Hermes Agent Setting"
 .\run_bridge.ps1
 ```
 
+`run_bridge.ps1`는 이제 과거 stdio bridge가 아니라 `start_hermes_bridge_http.ps1`를 호출하는 래퍼입니다.
+즉, 브리지 표준 시작 경로는 HTTP bridge 하나로 통일됩니다.
+
 기본은 `mock` 모드라서 OpenCode에서 붙인 뒤 다음처럼 테스트하면 됩니다.
 
 - `hermes_status`
@@ -150,6 +153,9 @@ powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\start_hermes_b
 ```powershell
 powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\run_discord_hermes_bot.ps1"
 ```
+
+`run_discord_hermes_bot.ps1`는 이제 봇 실행 전에 `http://127.0.0.1:8765/api/status`를 확인하고,
+응답이 없으면 `start_hermes_bridge_http.ps1`를 먼저 실행한 뒤 bridge가 준비될 때까지 대기합니다.
 
 부팅 시 자동으로 실행하려면 관리자 PowerShell에서 아래 스크립트를 실행해 `HermesDiscordBot` 작업을 등록합니다.
 

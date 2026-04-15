@@ -27,6 +27,13 @@ def normalize_message_content(message: discord.Message, bot_user_id: int) -> str
         if raw.startswith(prefix + " "):
             return "!agent " + raw[len(prefix) :].strip()
 
+    role_prefixes = [f"<@&{role.id}>" for role in message.role_mentions]
+    for prefix in role_prefixes:
+        if raw == prefix:
+            return "!agent"
+        if raw.startswith(prefix + " "):
+            return "!agent " + raw[len(prefix) :].strip()
+
     return raw
 
 
