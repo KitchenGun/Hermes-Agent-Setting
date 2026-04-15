@@ -18,7 +18,11 @@
 - `run_bridge.ps1`: Windows PowerShell 실행 스크립트
 - `start_hermes_bridge_http.ps1`: HTTP 브리지를 백그라운드로 시작하는 스크립트
 - `discord_hermes_bot.py`: Discord 메시지를 Hermes 브리지로 전달하는 봇
+- `calendar_manager_agent.py`: Google Calendar 전용 에이전트 프롬프트/라우팅 정의
+- `google_calendar_integration.py`: calendar_manager_agent의 tool_request를 실제 Google Calendar API 호출로 실행
 - `run_discord_hermes_bot.ps1`: Discord 봇 실행 스크립트
+- `install_discord_bot_boot_task.ps1`: Discord 봇 자동 시작 작업 등록 스크립트
+- `check_hermes_startup_tasks.ps1`: Hermes 시작 작업 상태 확인 스크립트
 - `.env.example`: 실제 Hermes 연결 예시
 - `opencode.mcp.example.json`: OpenCode 등록 예시
 
@@ -147,6 +151,12 @@ powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\start_hermes_b
 powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\run_discord_hermes_bot.ps1"
 ```
 
+부팅 시 자동으로 실행하려면 관리자 PowerShell에서 아래 스크립트를 실행해 `HermesDiscordBot` 작업을 등록합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\install_discord_bot_boot_task.ps1"
+```
+
 메시지 예시:
 
 ```text
@@ -159,6 +169,47 @@ powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\run_discord_he
 멘션으로 시작한 메시지는 내부적으로 `!agent`로 변환해서 처리합니다.
 
 같은 사용자와 같은 채널에서 이어지는 최근 대화 몇 턴은 자동으로 OpenCode 실행 문맥에 함께 전달합니다.
+
+캘린더 관련 요청은 일반 Hermes 실행 프롬프트 대신 `calendar_manager_agent` 전용 프롬프트로 라우팅됩니다.
+
+예시:
+
+```text
+@Agent-Hermes 오늘 일정 보여줘
+@Agent-Hermes 내일 오후 3시에 팀 미팅 추가해줘
+@Agent-Hermes 금요일 미팅을 4시로 옮겨줘
+@Agent-Hermes 내일 2시간 비는 시간 찾아줘
+```
+
+이 경우 OpenCode는 사용자에게 바로 보여줄 일반 문장 대신, 우선 Google Calendar 실행 계획용 JSON을 생성하도록 유도됩니다.
+
+이제 브리지는 그 JSON의 `tool_request`를 후처리해 실제 Google Calendar API를 호출하고, 가능하면 최종 결과를 Discord에 바로 반환합니다.
+
+필요한 환경 변수:
+
+```env
+GOOGLE_CALENDAR_ACCESS_TOKEN=...
+```
+
+또는 refresh token 방식:
+
+```env
+GOOGLE_CALENDAR_REFRESH_TOKEN=...
+GOOGLE_CALENDAR_CLIENT_ID=...
+GOOGLE_CALENDAR_CLIENT_SECRET=...
+```
+
+현재 연결된 실행 작업:
+
+- `search`
+- `create`
+- `update`
+- `delete`
+- `freebusy`
+
+제한:
+
+- `respond`(초대 응답)는 아직 보류 상태로 반환됩니다.
 
 주의:
 
@@ -293,7 +344,28 @@ C:\Users\kang9\.config\opencode\opencode.json
 }
 ```
 
-로그인 시 자동 시작되도록 `HermesOpenCodeBridge` 작업도 등록해 두었습니다.
+부팅 직후 자동 시작이 필요하면 관리자 PowerShell에서 아래 스크립트로 `HermesOpenCodeBridge` 작업을 등록할 수 있습니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\install_hermes_boot_task.ps1"
+```
+
+기본값은 현재 사용자 컨텍스트로 `AtStartup` 트리거를 등록합니다.
+
+## 시작 작업 상태 확인
+
+상태 확인:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "E:\Hermes Agent Setting\check_hermes_startup_tasks.ps1"
+```
+
+로그 위치:
+
+- `bridge.log`
+- `discord_bot_restart.log`
+
+추가로 Windows 작업 스케줄러의 `History` 탭에서도 실행 기록을 확인할 수 있습니다.
 
 ## 공급자 메모
 
