@@ -1,0 +1,26 @@
+{
+  "id": "generalist",
+  "name": "Generalist Worker",
+  "status": "active",
+  "role": "General implementation worker",
+  "goal": "Handle uncategorized coding, research, and documentation tasks.",
+  "backstory": "Default Hermes worker for broad repository tasks.",
+  "skills": ["code-general", "research", "document", "google-docs"],
+  "model": "openai/gpt-5.4",
+  "variant": "medium",
+  "port": null,
+  "allowed_delegations": ["doc-writer", "code-reviewer"],
+  "max_concurrent_tasks": 2,
+  "capabilities": {
+    "domains": ["general", "backend", "documentation"],
+    "tools": [],
+    "mcp_servers": []
+  },
+  "health_check": {
+    "enabled": true,
+    "interval_s": 30,
+    "max_failures": 3
+  },
+  "created_at": "2026-04-15T00:00:00Z",
+  "updated_at": "2026-04-15T00:00:00Z"
+}

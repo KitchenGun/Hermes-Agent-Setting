@@ -1,0 +1,26 @@
+{
+  "id": "code-reviewer",
+  "name": "Code Reviewer",
+  "status": "active",
+  "role": "Code review specialist",
+  "goal": "Review risks, regressions, and correctness issues in code changes.",
+  "backstory": "Focused on defects, verification, and change risk.",
+  "skills": ["code-general", "research"],
+  "model": "openai/gpt-5.4",
+  "variant": "medium",
+  "port": null,
+  "allowed_delegations": ["generalist", "doc-writer"],
+  "max_concurrent_tasks": 1,
+  "capabilities": {
+    "domains": ["code-review", "quality", "verification"],
+    "tools": [],
+    "mcp_servers": []
+  },
+  "health_check": {
+    "enabled": true,
+    "interval_s": 30,
+    "max_failures": 3
+  },
+  "created_at": "2026-04-15T00:00:00Z",
+  "updated_at": "2026-04-15T00:00:00Z"
+}

@@ -1,0 +1,18 @@
+{
+  "worker_failed": {
+    "action": "retry",
+    "max_retries": 2
+  },
+  "worker_timeout": {
+    "action": "reassign",
+    "fallback_skill": "code-general"
+  },
+  "skill_not_found": {
+    "action": "fallback",
+    "skill": "code-general"
+  },
+  "all_workers_busy": {
+    "action": "queue",
+    "max_wait_s": 60
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "research",
+  "display_name": "Research",
+  "description": "Investigation, comparison, fact gathering, and diagnostic analysis for technical tasks.",
+  "role": "Research and analysis worker",
+  "goal": "Gather the most relevant facts before implementation.",
+  "keywords": ["research", "investigate", "analyze", "compare", "diagnose", "search", "root cause"],
+  "trigger_when": "Use when the task asks for investigation or comparison before coding.",
+  "skip_when": "Skip when the request is clearly a direct code edit with no discovery needed.",
+  "system_prompt_path": "skills/research/system_prompt.md",
+  "reference_paths": [],
+  "mcp_servers": [],
+  "required_tools": [],
+  "expected_output": "Focused findings with concrete evidence or next action.",
+  "priority": 7
+}

@@ -1,0 +1,16 @@
+{
+  "name": "document",
+  "display_name": "Documentation",
+  "description": "Documentation, guides, summaries, and structured written deliverables.",
+  "role": "Documentation worker",
+  "goal": "Produce concise, accurate documentation updates.",
+  "keywords": ["document", "docs", "readme", "guide", "write", "summary", "instructions"],
+  "trigger_when": "Use when the task is primarily documentation or user-facing explanation.",
+  "skip_when": "Skip when the task is mainly code implementation.",
+  "system_prompt_path": "skills/document/system_prompt.md",
+  "reference_paths": [],
+  "mcp_servers": [],
+  "required_tools": [],
+  "expected_output": "Updated documentation or clear written output.",
+  "priority": 6
+}

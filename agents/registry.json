@@ -1,0 +1,183 @@
+[
+  {
+    "id": "calendar-manager",
+    "name": "Calendar Manager",
+    "status": "active",
+    "role": "Google Calendar specialist",
+    "goal": "Handle scheduling and calendar operations safely.",
+    "backstory": "Specialized in structured schedule execution.",
+    "skills": [
+      "google-calendar"
+    ],
+    "model": "openai/gpt-5.4",
+    "variant": "medium",
+    "port": null,
+    "allowed_delegations": [
+      "generalist",
+      "doc-writer"
+    ],
+    "max_concurrent_tasks": 1,
+    "capabilities": {
+      "domains": [
+        "calendar",
+        "schedule",
+        "time-management"
+      ],
+      "tools": [],
+      "mcp_servers": []
+    },
+    "health_check": {
+      "enabled": true,
+      "interval_s": 30,
+      "max_failures": 3
+    },
+    "created_at": "2026-04-15T00:00:00Z",
+    "updated_at": "2026-04-15T00:00:00Z"
+  },
+  {
+    "id": "code-reviewer",
+    "name": "Code Reviewer",
+    "status": "active",
+    "role": "Code review specialist",
+    "goal": "Review risks, regressions, and correctness issues in code changes.",
+    "backstory": "Focused on defects, verification, and change risk.",
+    "skills": [
+      "code-general",
+      "research"
+    ],
+    "model": "openai/gpt-5.4",
+    "variant": "medium",
+    "port": null,
+    "allowed_delegations": [
+      "generalist",
+      "doc-writer"
+    ],
+    "max_concurrent_tasks": 1,
+    "capabilities": {
+      "domains": [
+        "code-review",
+        "quality",
+        "verification"
+      ],
+      "tools": [],
+      "mcp_servers": []
+    },
+    "health_check": {
+      "enabled": true,
+      "interval_s": 30,
+      "max_failures": 3
+    },
+    "created_at": "2026-04-15T00:00:00Z",
+    "updated_at": "2026-04-15T00:00:00Z"
+  },
+  {
+    "id": "doc-writer",
+    "name": "Doc Writer",
+    "status": "active",
+    "role": "Documentation specialist",
+    "goal": "Produce concise repo-aligned written outputs.",
+    "backstory": "Focused on documentation and summaries.",
+    "skills": [
+      "document",
+      "google-docs"
+    ],
+    "model": "openai/gpt-5.4",
+    "variant": "medium",
+    "port": null,
+    "allowed_delegations": [
+      "generalist"
+    ],
+    "max_concurrent_tasks": 1,
+    "capabilities": {
+      "domains": [
+        "documentation",
+        "guides"
+      ],
+      "tools": [],
+      "mcp_servers": []
+    },
+    "health_check": {
+      "enabled": true,
+      "interval_s": 30,
+      "max_failures": 3
+    },
+    "created_at": "2026-04-15T00:00:00Z",
+    "updated_at": "2026-04-15T00:00:00Z"
+  },
+  {
+    "id": "generalist",
+    "name": "Generalist Worker",
+    "status": "active",
+    "role": "General implementation worker",
+    "goal": "Handle uncategorized coding, research, and documentation tasks.",
+    "backstory": "Default Hermes worker for broad repository tasks.",
+    "skills": [
+      "code-general",
+      "research",
+      "document",
+      "google-docs"
+    ],
+    "model": "openai/gpt-5.4",
+    "variant": "medium",
+    "port": null,
+    "allowed_delegations": [
+      "doc-writer",
+      "code-reviewer"
+    ],
+    "max_concurrent_tasks": 2,
+    "capabilities": {
+      "domains": [
+        "general",
+        "backend",
+        "documentation"
+      ],
+      "tools": [],
+      "mcp_servers": []
+    },
+    "health_check": {
+      "enabled": true,
+      "interval_s": 30,
+      "max_failures": 3
+    },
+    "created_at": "2026-04-15T00:00:00Z",
+    "updated_at": "2026-04-15T00:00:00Z"
+  },
+  {
+    "id": "ue5-developer",
+    "name": "UE5 Developer",
+    "status": "active",
+    "role": "Unreal Engine 5 specialist",
+    "goal": "Handle UE5-specific coding and system work.",
+    "backstory": "Specialized in UE5 gameplay and project integration.",
+    "skills": [
+      "unreal"
+    ],
+    "model": "openai/gpt-5.4",
+    "variant": "medium",
+    "port": null,
+    "allowed_delegations": [
+      "doc-writer",
+      "code-reviewer",
+      "generalist"
+    ],
+    "max_concurrent_tasks": 1,
+    "capabilities": {
+      "domains": [
+        "unreal-engine",
+        "game-dev",
+        "ue5"
+      ],
+      "tools": [
+        "UnrealEditor"
+      ],
+      "mcp_servers": []
+    },
+    "health_check": {
+      "enabled": true,
+      "interval_s": 30,
+      "max_failures": 3
+    },
+    "created_at": "2026-04-15T00:00:00Z",
+    "updated_at": "2026-04-15T00:00:00Z"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "id": "doc-writer",
+  "name": "Doc Writer",
+  "status": "active",
+  "role": "Documentation specialist",
+  "goal": "Produce concise repo-aligned written outputs.",
+  "backstory": "Focused on documentation and summaries.",
+  "skills": ["document", "google-docs"],
+  "model": "openai/gpt-5.4",
+  "variant": "medium",
+  "port": null,
+  "allowed_delegations": ["generalist"],
+  "max_concurrent_tasks": 1,
+  "capabilities": {
+    "domains": ["documentation", "guides"],
+    "tools": [],
+    "mcp_servers": []
+  },
+  "health_check": {
+    "enabled": true,
+    "interval_s": 30,
+    "max_failures": 3
+  },
+  "created_at": "2026-04-15T00:00:00Z",
+  "updated_at": "2026-04-15T00:00:00Z"
+}

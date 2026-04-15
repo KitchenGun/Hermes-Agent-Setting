@@ -1,0 +1,16 @@
+{
+  "name": "unreal",
+  "display_name": "Unreal Engine 5",
+  "description": "Unreal Engine 5 C++, Blueprint, gameplay, AI, GAS, UI, and project integration work.",
+  "role": "UE5 specialist worker",
+  "goal": "Produce correct UE5-focused implementation guidance or code changes.",
+  "keywords": ["ue5", "unreal", "blueprint", "gas", "commonui", "behavior tree", "aiperception"],
+  "trigger_when": "Use when the task explicitly targets Unreal Engine projects or systems.",
+  "skip_when": "Skip when the work is unrelated to Unreal Engine.",
+  "system_prompt_path": "skills/unreal/system_prompt.md",
+  "reference_paths": [],
+  "mcp_servers": [],
+  "required_tools": ["UnrealEditor"],
+  "expected_output": "UE5-ready code or implementation guidance.",
+  "priority": 10
+}

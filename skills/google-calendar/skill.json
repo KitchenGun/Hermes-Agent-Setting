@@ -1,0 +1,16 @@
+{
+  "name": "google-calendar",
+  "display_name": "Google Calendar",
+  "description": "Google Calendar scheduling, event lookup, creation, update, deletion, and free/busy handling.",
+  "role": "Calendar management worker",
+  "goal": "Translate natural-language schedule requests into safe calendar actions.",
+  "keywords": ["calendar", "schedule", "event", "meeting", "free time", "google calendar"],
+  "trigger_when": "Use when the user asks to inspect or change schedule data.",
+  "skip_when": "Skip when the task only mentions time casually without calendar action.",
+  "system_prompt_path": "skills/google-calendar/system_prompt.md",
+  "reference_paths": [],
+  "mcp_servers": [],
+  "required_tools": [],
+  "expected_output": "Calendar action plan or executed calendar result.",
+  "priority": 10
+}

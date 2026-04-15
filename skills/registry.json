@@ -1,0 +1,145 @@
+[
+  {
+    "name": "google-calendar",
+    "display_name": "Google Calendar",
+    "description": "Google Calendar scheduling, event lookup, creation, update, deletion, and free/busy handling.",
+    "keywords": [
+      "calendar",
+      "schedule",
+      "event",
+      "meeting",
+      "free time",
+      "google calendar"
+    ],
+    "role": "Calendar management worker",
+    "goal": "Translate natural-language schedule requests into safe calendar actions.",
+    "trigger_when": "Use when the user asks to inspect or change schedule data.",
+    "skip_when": "Skip when the task only mentions time casually without calendar action.",
+    "system_prompt_path": "skills/google-calendar/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [],
+    "expected_output": "Calendar action plan or executed calendar result.",
+    "priority": 10
+  },
+  {
+    "name": "unreal",
+    "display_name": "Unreal Engine 5",
+    "description": "Unreal Engine 5 C++, Blueprint, gameplay, AI, GAS, UI, and project integration work.",
+    "keywords": [
+      "ue5",
+      "unreal",
+      "blueprint",
+      "gas",
+      "commonui",
+      "behavior tree",
+      "aiperception"
+    ],
+    "role": "UE5 specialist worker",
+    "goal": "Produce correct UE5-focused implementation guidance or code changes.",
+    "trigger_when": "Use when the task explicitly targets Unreal Engine projects or systems.",
+    "skip_when": "Skip when the work is unrelated to Unreal Engine.",
+    "system_prompt_path": "skills/unreal/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [
+      "UnrealEditor"
+    ],
+    "expected_output": "UE5-ready code or implementation guidance.",
+    "priority": 10
+  },
+  {
+    "name": "code-general",
+    "display_name": "General Code",
+    "description": "General-purpose coding and implementation work across the current repository.",
+    "keywords": [
+      "code",
+      "python",
+      "bug",
+      "fix",
+      "implement",
+      "refactor",
+      "test",
+      "backend",
+      "api"
+    ],
+    "role": "General coding worker",
+    "goal": "Implement or modify code safely in the current project.",
+    "trigger_when": "Use for repository changes, debugging, and backend implementation tasks.",
+    "skip_when": "Skip when a more precise specialist clearly fits the task.",
+    "system_prompt_path": "skills/code-general/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [],
+    "expected_output": "Concrete code change, fix summary, or executable implementation result.",
+    "priority": 9
+  },
+  {
+    "name": "research",
+    "display_name": "Research",
+    "description": "Investigation, comparison, fact gathering, and diagnostic analysis for technical tasks.",
+    "keywords": [
+      "research",
+      "investigate",
+      "analyze",
+      "compare",
+      "diagnose",
+      "search",
+      "root cause"
+    ],
+    "role": "Research and analysis worker",
+    "goal": "Gather the most relevant facts before implementation.",
+    "trigger_when": "Use when the task asks for investigation or comparison before coding.",
+    "skip_when": "Skip when the request is clearly a direct code edit with no discovery needed.",
+    "system_prompt_path": "skills/research/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [],
+    "expected_output": "Focused findings with concrete evidence or next action.",
+    "priority": 7
+  },
+  {
+    "name": "document",
+    "display_name": "Documentation",
+    "description": "Documentation, guides, summaries, and structured written deliverables.",
+    "keywords": [
+      "document",
+      "docs",
+      "readme",
+      "guide",
+      "write",
+      "summary",
+      "instructions"
+    ],
+    "role": "Documentation worker",
+    "goal": "Produce concise, accurate documentation updates.",
+    "trigger_when": "Use when the task is primarily documentation or user-facing explanation.",
+    "skip_when": "Skip when the task is mainly code implementation.",
+    "system_prompt_path": "skills/document/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [],
+    "expected_output": "Updated documentation or clear written output.",
+    "priority": 6
+  },
+  {
+    "name": "google-docs",
+    "display_name": "Google Docs",
+    "description": "Google Docs and document-oriented workspace tasks.",
+    "keywords": [
+      "google docs",
+      "docs",
+      "document workspace"
+    ],
+    "role": "Document workspace worker",
+    "goal": "Handle document-focused tasks that involve structured written content.",
+    "trigger_when": "Use when the task explicitly references Google Docs style workflows.",
+    "skip_when": "Skip when ordinary markdown or repository docs are enough.",
+    "system_prompt_path": "skills/google-docs/system_prompt.md",
+    "reference_paths": [],
+    "mcp_servers": [],
+    "required_tools": [],
+    "expected_output": "Structured document result or editing guidance.",
+    "priority": 5
+  }
+]

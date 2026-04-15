@@ -1,0 +1,16 @@
+{
+  "name": "google-docs",
+  "display_name": "Google Docs",
+  "description": "Google Docs and document-oriented workspace tasks.",
+  "role": "Document workspace worker",
+  "goal": "Handle document-focused tasks that involve structured written content.",
+  "keywords": ["google docs", "docs", "document workspace"],
+  "trigger_when": "Use when the task explicitly references Google Docs style workflows.",
+  "skip_when": "Skip when ordinary markdown or repository docs are enough.",
+  "system_prompt_path": "skills/google-docs/system_prompt.md",
+  "reference_paths": [],
+  "mcp_servers": [],
+  "required_tools": [],
+  "expected_output": "Structured document result or editing guidance.",
+  "priority": 5
+}
