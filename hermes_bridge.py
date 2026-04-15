@@ -8,10 +8,12 @@ import urllib.request
 from typing import Any
 
 from discord_task_flow import execute_discord_task
+from env_loader import load_env_file
 from opencode_backend import send as opencode_send
 from opencode_backend import start as opencode_start
 from opencode_backend import status as opencode_status
 from opencode_backend import stop as opencode_stop
+from orchestrator import get_default_orchestrator
 
 
 SERVER_NAME = "hermes-opencode-bridge"
@@ -185,6 +187,10 @@ class HermesAdapter:
 ADAPTER = HermesAdapter()
 
 
+def get_orchestrator():
+    return get_default_orchestrator()
+
+
 TOOLS = [
     {
         "name": "hermes_status",
@@ -238,6 +244,78 @@ TOOLS = [
                 "context": {"type": "string", "description": "Optional prior conversation context."},
             },
             "required": ["user", "channel", "message"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "hermes_orchestrate",
+        "description": "Execute a routed Hermes task through the multi-agent orchestrator.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "task": {"type": "string", "description": "Task to execute."},
+                "user": {"type": "string", "description": "Optional user identifier."},
+                "context": {"type": "string", "description": "Optional prior context."},
+            },
+            "required": ["task"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "hermes_register_agent",
+        "description": "Register an agent definition in the Hermes registry.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent_json": {"type": "string", "description": "agent.json content as a JSON string."}
+            },
+            "required": ["agent_json"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "hermes_list_agents",
+        "description": "List registered Hermes agents.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "hermes_agent_status",
+        "description": "Get one Hermes agent definition.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "agent_id": {"type": "string", "description": "Registered agent id."}
+            },
+            "required": ["agent_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "hermes_list_suggestions",
+        "description": "List pending specialist implementation suggestions.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "hermes_approve_suggestion",
+        "description": "Approve a pending specialist suggestion.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "suggestion_id": {"type": "string", "description": "Pending suggestion id."}
+            },
+            "required": ["suggestion_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "hermes_reject_suggestion",
+        "description": "Reject a pending specialist suggestion.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "suggestion_id": {"type": "string", "description": "Pending suggestion id."}
+            },
+            "required": ["suggestion_id"],
             "additionalProperties": False,
         },
     },
@@ -361,6 +439,73 @@ def handle_request(message: dict[str, Any]) -> None:
             send_response(message_id, tool_result(execute_discord_task(ADAPTER, user, channel, prompt, context)))
             return
 
+        if name == "hermes_orchestrate":
+            task = str(arguments.get("task", "")).strip()
+            if not task:
+                send_response(message_id, tool_result({"error": "task is required"}, is_error=True))
+                return
+            send_response(
+                message_id,
+                tool_result(
+                    get_orchestrator().orchestrate(
+                        task,
+                        str(arguments.get("user", "")).strip(),
+                        str(arguments.get("context", "")).strip(),
+                    )
+                ),
+            )
+            return
+
+        if name == "hermes_register_agent":
+            agent_json = str(arguments.get("agent_json", "")).strip()
+            if not agent_json:
+                send_response(message_id, tool_result({"error": "agent_json is required"}, is_error=True))
+                return
+            try:
+                result = get_orchestrator().register_agent_json(agent_json)
+            except Exception as exc:  # noqa: BLE001
+                send_response(message_id, tool_result({"error": str(exc)}, is_error=True))
+                return
+            send_response(message_id, tool_result(result))
+            return
+
+        if name == "hermes_list_agents":
+            send_response(message_id, tool_result({"agents": get_orchestrator().list_agents()}))
+            return
+
+        if name == "hermes_agent_status":
+            agent_id = str(arguments.get("agent_id", "")).strip()
+            agent = get_orchestrator().get_agent(agent_id)
+            if agent is None:
+                send_response(message_id, tool_result({"error": f"Unknown agent: {agent_id}"}, is_error=True))
+                return
+            send_response(message_id, tool_result(agent))
+            return
+
+        if name == "hermes_list_suggestions":
+            send_response(message_id, tool_result({"suggestions": get_orchestrator().list_suggestions()}))
+            return
+
+        if name == "hermes_approve_suggestion":
+            suggestion_id = str(arguments.get("suggestion_id", "")).strip()
+            try:
+                result = get_orchestrator().approve_suggestion(suggestion_id)
+            except KeyError:
+                send_response(message_id, tool_result({"error": f"Unknown suggestion: {suggestion_id}"}, is_error=True))
+                return
+            send_response(message_id, tool_result(result))
+            return
+
+        if name == "hermes_reject_suggestion":
+            suggestion_id = str(arguments.get("suggestion_id", "")).strip()
+            try:
+                result = get_orchestrator().reject_suggestion(suggestion_id)
+            except KeyError:
+                send_response(message_id, tool_result({"error": f"Unknown suggestion: {suggestion_id}"}, is_error=True))
+                return
+            send_response(message_id, tool_result(result))
+            return
+
         send_response(message_id, tool_result({"error": f"Unknown tool: {name}"}, is_error=True))
         return
 
@@ -368,6 +513,7 @@ def handle_request(message: dict[str, Any]) -> None:
 
 
 def main() -> int:
+    load_env_file()
     log("bridge started")
     while True:
         message = read_message()
