@@ -1,0 +1,46 @@
+{
+  "name": "unreal-mcp",
+  "display_name": "Unreal MCP Control",
+  "description": "Control a local UnrealMCP UE5 plugin and Python MCP server for editor automation, Blueprint, material, AI, and scene operations.",
+  "keywords": [
+    "unreal mcp",
+    "unrealmcp",
+    "ue5",
+    "unreal",
+    "editor automation",
+    "blueprint",
+    "material",
+    "ai",
+    "panicroom",
+    "tcp 13377"
+  ],
+  "role": "Unreal MCP control specialist",
+  "goal": "Translate user intent into safe, concrete UnrealMCP control steps for the local PanicRoom project and UnrealMCP server.",
+  "trigger_when": "Use when the task mentions UnrealMCP, PanicRoom, UE5 editor control, Blueprint or material automation, AI setup, viewport control, or MCP-based Unreal operations.",
+  "skip_when": "Skip when the work is only general Unreal discussion or unrelated to the local UnrealMCP control flow.",
+  "system_prompt_path": "skills/unreal-mcp/system_prompt.md",
+  "reference_paths": [
+    "D:/PanicRoom/Plugins/UnrealMCP/UnrealMCP.uplugin",
+    "../UnrealMCP/README.md",
+    "../UnrealMCP/rules/communication-protocol.md",
+    "../UnrealMCP/rules/ue5-api-caution.md",
+    "skills/unreal-mcp/imported_from_skills_sh.md"
+  ],
+  "mcp_servers": [
+    {
+      "name": "unreal-mcp",
+      "transport": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "unreal_mcp"
+      ],
+      "cwd": "E:/UnrealMCP/mcp-server/src"
+    }
+  ],
+  "required_tools": [
+    "UnrealEditor"
+  ],
+  "expected_output": "A concrete UnrealMCP action plan, exact tool candidates and parameters, or a validated execution summary for UE5 editor control.",
+  "priority": 11
+}
