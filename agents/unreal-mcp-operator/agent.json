@@ -1,0 +1,56 @@
+{
+  "id": "unreal-mcp-operator",
+  "name": "Unreal MCP Operator",
+  "status": "active",
+  "role": "Local UnrealMCP control specialist",
+  "goal": "Handle UnrealMCP setup, routing, and UE5 editor control tasks for the PanicRoom project safely.",
+  "backstory": "Specialized in the local PanicRoom UnrealMCP plugin, Python MCP server flow, and UE5 editor automation tasks.",
+  "skills": [
+    "unreal-mcp",
+    "unreal",
+    "research"
+  ],
+  "model": "openai/gpt-5.4",
+  "variant": "medium",
+  "port": null,
+  "allowed_delegations": [
+    "ue5-developer",
+    "generalist",
+    "doc-writer",
+    "code-reviewer"
+  ],
+  "max_concurrent_tasks": 1,
+  "capabilities": {
+    "domains": [
+      "unreal-mcp",
+      "unreal-engine",
+      "ue5-editor-automation",
+      "panicroom",
+      "blueprint",
+      "material",
+      "ai"
+    ],
+    "tools": [
+      "UnrealEditor"
+    ],
+    "mcp_servers": [
+      {
+        "name": "unreal-mcp",
+        "transport": "stdio",
+        "command": "python",
+        "args": [
+          "-m",
+          "unreal_mcp"
+        ],
+        "cwd": "E:/UnrealMCP/mcp-server/src"
+      }
+    ]
+  },
+  "health_check": {
+    "enabled": true,
+    "interval_s": 30,
+    "max_failures": 3
+  },
+  "created_at": "2026-04-15T00:00:00Z",
+  "updated_at": "2026-04-15T00:00:00Z"
+}
