@@ -284,6 +284,12 @@ def send(
     except subprocess.TimeoutExpired as exc:
         stdout = (exc.stdout or "").strip() if isinstance(exc.stdout, str) else ""
         stderr = (exc.stderr or "").strip() if isinstance(exc.stderr, str) else ""
+        # 타임아웃이더라도 stdout에서 텍스트 추출 시도
+        final_text = _extract_final_text(stdout)
+        # 타임아웃 시 stdout 원문도 fallback으로 보존
+        if not final_text and stdout:
+            # JSON 파싱 실패한 경우 raw stdout 사용
+            final_text = stdout[:2000]
         return {
             "mode": "opencode",
             "worker": _config_name(config),
@@ -291,12 +297,18 @@ def send(
             "returncode": None,
             "stdout": stdout,
             "stderr": stderr,
-            "result_text": _extract_final_text(stdout),
-            "ok": False,
+            "result_text": final_text,
+            # 타임아웃은 응답 수신 실패이지 작업 실패가 아님
+            # (UnrealMCP 등 부수효과는 이미 실행됐을 수 있음)
+            "ok": bool(final_text),
+            "timed_out": True,
             "error": f"OpenCode task timed out after {config.timeout_seconds}s",
         }
 
     final_text = _extract_final_text(completed.stdout)
+    # JSON 파싱 실패 시 stdout 원문 fallback
+    if not final_text and completed.stdout.strip():
+        final_text = completed.stdout.strip()[:2000]
     return {
         "mode": "opencode",
         "worker": _config_name(config),

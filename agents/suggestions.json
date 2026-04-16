@@ -3291,5 +3291,137 @@
       "ue5-developer",
       "calendar-manager"
     ]
+  },
+  {
+    "suggestion_id": "suggest-20260416074159978909",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "In the UE5 editor, create a Point Light actor at world coordinates (1000, 1000, 300). Return only JSON with fields success and actor_name.",
+    "fallback_result_summary": "",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T07:41:59Z",
+      "updated_at": "2026-04-16T07:41:59Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "unreal-mcp-operator",
+      "ue5-developer",
+      "calendar-manager"
+    ]
+  },
+  {
+    "suggestion_id": "suggest-20260416074206477356",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "Route to agent unreal-mcp-operator first. In the PanicRoom UE5 editor, create a Point Light actor at world coordinates (1000, 1000, 300). If unreal-mcp-operator or UnrealEditor is unavailable, fall back to ue5-developer. Return only JSON with fields success and actor_name.",
+    "fallback_result_summary": "",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T07:40:05Z",
+      "updated_at": "2026-04-16T07:40:05Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "unreal-mcp-operator",
+      "ue5-developer",
+      "calendar-manager"
+    ]
   }
 ]

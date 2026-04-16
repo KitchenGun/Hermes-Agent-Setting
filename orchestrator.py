@@ -425,11 +425,13 @@ class HermesOrchestrator:
             "- Protocol: newline-delimited JSON",
             "- Valid actor tool commands include create_actor, get_actor_properties, get_actors_in_level, set_actor_transform",
             "Execution rules:",
-            "1. Execute the command EXACTLY ONCE. Never retry a create/spawn/place command regardless of the response.",
+            "1. Execute the command EXACTLY ONCE. Never retry, never call the same tool twice, never try alternative methods.",
             "2. Use ONLY ONE method: prefer the MCP tool. If MCP tool is unavailable, use TCP 127.0.0.1:13377 as fallback. Never use both.",
             "3. After executing a creation command, call get_actor_properties or get_actors_in_level to verify — do NOT call create again.",
-            "4. If execution fails, return the exact failure reason and stop. Do not attempt alternative methods.",
-            "5. Do not output a plan, checklist, or generic UE guidance.",
+            "4. If you receive a timeout or no response from the MCP tool, STOP immediately. Do not retry. The action may have already completed on the UE5 side.",
+            "5. If execution fails with a connection error, return the exact failure reason and stop. Do not attempt alternative methods.",
+            "6. Do not output a plan, checklist, or generic UE guidance.",
+            "7. IMPORTANT: This prompt is executed exactly once by the system. Do not call hermes_orchestrate, hermes_send, or any similar routing tool from within this context.",
         ]
 
         if agent is not None:
@@ -451,7 +453,18 @@ class HermesOrchestrator:
         sections.append(f"Task:\n{subtask.task}")
         return "\n\n".join(section for section in sections if section.strip())
 
+    UNREAL_MCP_SKILLS = {"unreal-mcp", "unreal"}
+
     def _quality_check(self, subtask: SubTask, result: dict[str, Any], resolution: str) -> str:
+        # UnrealMCP 스킬: 타임아웃이더라도 부수효과(액터 생성 등)는 UE5에서 이미 실행됨
+        # ok=False + timed_out=True 조합은 실제 실패가 아닌 응답 수신 실패이므로 sufficient 처리
+        required_skills = set(subtask.required_skills or [])
+        if required_skills & self.UNREAL_MCP_SKILLS:
+            if result.get("timed_out") or result.get("ok"):
+                return "sufficient"
+            # 명시적 에러(연결 실패 등)만 insufficient
+            return "insufficient"
+
         if resolution == "specialist":
             return "sufficient" if result.get("ok") else "insufficient"
         if not result.get("ok"):

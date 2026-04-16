@@ -93,6 +93,7 @@ class AgentPool:
         return snapshot
 
     FORCED_MODEL_SKILLS = {"unreal-mcp", "unreal"}
+    UNREAL_TASK_TIMEOUT = int(os.getenv("HERMES_UNREAL_TIMEOUT", "300").strip() or "300")
 
     def run_task(
         self,
@@ -102,14 +103,16 @@ class AgentPool:
         skills: list[str] | None = None,
     ) -> dict[str, Any]:
         worker = self._acquire_worker(agent, skills or [])
-        # UnrealMCP 스킬이 포함된 경우 openai/gpt-5.4 강제
         effective_skills = set(skills or [])
+        # UnrealMCP 스킬: openai/gpt-5.4 강제 + 타임아웃 연장(300s)
         if effective_skills & self.FORCED_MODEL_SKILLS:
             resolved_model = "openai/gpt-5.4"
             resolved_variant = agent.variant if agent else worker.variant
+            resolved_timeout = self.UNREAL_TASK_TIMEOUT
         else:
             resolved_model = agent.model if agent else worker.model
             resolved_variant = agent.variant if agent else worker.variant
+            resolved_timeout = None  # opencode_backend 기본값 사용
         try:
             return opencode_send(
                 prompt,
@@ -120,6 +123,7 @@ class AgentPool:
                 variant=resolved_variant,
                 pid_file=worker.pid_file,
                 log_file=worker.log_file,
+                timeout_seconds=resolved_timeout,
             )
         finally:
             self._release_worker(worker)
