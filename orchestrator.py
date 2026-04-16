@@ -425,10 +425,10 @@ class HermesOrchestrator:
             "- Protocol: newline-delimited JSON",
             "- Valid actor tool commands include create_actor, get_actor_properties, get_actors_in_level, set_actor_transform",
             "Execution rules:",
-            "1. Prefer direct execution over planning.",
-            "2. If a direct MCP tool is unavailable in-session, use Python or shell to open TCP 127.0.0.1:13377 and send the command yourself.",
-            "3. For scene creation requests, validate connectivity quickly, execute the command, then verify the created actor/properties.",
-            "4. If execution fails, return the exact failure reason only.",
+            "1. Execute the command EXACTLY ONCE. Never retry a create/spawn/place command regardless of the response.",
+            "2. Use ONLY ONE method: prefer the MCP tool. If MCP tool is unavailable, use TCP 127.0.0.1:13377 as fallback. Never use both.",
+            "3. After executing a creation command, call get_actor_properties or get_actors_in_level to verify — do NOT call create again.",
+            "4. If execution fails, return the exact failure reason and stop. Do not attempt alternative methods.",
             "5. Do not output a plan, checklist, or generic UE guidance.",
         ]
 
