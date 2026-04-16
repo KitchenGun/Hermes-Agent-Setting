@@ -13,6 +13,10 @@ credentials.json
 *.log
 bridge.log
 
+# 런타임 데이터
+.playwright-mcp/
+knowledge/
+
 # Python 캐시
 __pycache__/
 *.py[cod]
