@@ -616,9 +616,11 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
     _, parsed_task = parse_discord_command(payload["message"])
     if not parsed_task:
         raw = payload["message"].strip()
+        # !agent 등 prefix 없이 @멘션으로만 보낸 경우 — 메시지 전체를 task로 사용
         if raw.lower() not in COMMAND_PREFIXES:
-            return _default_response("ignore", "", "", "public")
-        return _default_response("reply", "", "실행할 작업을 입력해 주세요", "ephemeral")
+            parsed_task = raw
+        else:
+            return _default_response("reply", "", "실행할 작업을 입력해 주세요", "ephemeral")
 
     if ZoneInfo is not None:
         try:
@@ -627,6 +629,14 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
             current_datetime = now_iso(DEFAULT_TIMEZONE)
     else:
         current_datetime = now_iso(DEFAULT_TIMEZONE)
+    # UnrealMCP 요청 여부 판단 (오케스트레이터 강제 경유 + openai/gpt-5.4 고정)
+    _unreal_keywords = ("unreal", "ue5", "panicroom", "panic room", "point light", "spot light",
+                        "directional light", "sky light", "skylight", "blueprint", "actor",
+                        "언리얼", "라이트", "액터", "블루프린트")
+    _unreal_actions  = ("create", "spawn", "place", "set", "move", "delete", "생성", "배치", "위치", "이동", "삭제", "추가")
+    _task_lower = parsed_task.lower()
+    _is_unreal_request = any(kw in _task_lower for kw in _unreal_keywords) and any(ac in _task_lower for ac in _unreal_actions)
+
     use_orchestrator = getattr(adapter, "mode", "").strip().lower() == "opencode" and not is_calendar_request(parsed_task)
 
     if is_calendar_request(parsed_task):
@@ -644,6 +654,10 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
         adapter_result = _run_gamejob_rawdata_update()
     elif _is_gamejob_match_request(parsed_task):
         adapter_result = _run_gamejob_match(adapter)
+    elif _is_unreal_request:
+        # UnrealMCP 요청: 오케스트레이터 직통, openai/gpt-5.4 강제
+        from orchestrator import get_default_orchestrator
+        adapter_result = get_default_orchestrator().orchestrate(parsed_task, payload["user"], payload["context"])
     elif use_orchestrator:
         from orchestrator import get_default_orchestrator
 

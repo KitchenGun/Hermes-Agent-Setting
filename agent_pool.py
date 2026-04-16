@@ -92,6 +92,8 @@ class AgentPool:
             )
         return snapshot
 
+    FORCED_MODEL_SKILLS = {"unreal-mcp", "unreal"}
+
     def run_task(
         self,
         prompt: str,
@@ -100,14 +102,22 @@ class AgentPool:
         skills: list[str] | None = None,
     ) -> dict[str, Any]:
         worker = self._acquire_worker(agent, skills or [])
+        # UnrealMCP 스킬이 포함된 경우 openai/gpt-5.4 강제
+        effective_skills = set(skills or [])
+        if effective_skills & self.FORCED_MODEL_SKILLS:
+            resolved_model = "openai/gpt-5.4"
+            resolved_variant = agent.variant if agent else worker.variant
+        else:
+            resolved_model = agent.model if agent else worker.model
+            resolved_variant = agent.variant if agent else worker.variant
         try:
             return opencode_send(
                 prompt,
                 context,
                 host=worker.host,
                 port=worker.port,
-                model=agent.model if agent else worker.model,
-                variant=agent.variant if agent else worker.variant,
+                model=resolved_model,
+                variant=resolved_variant,
                 pid_file=worker.pid_file,
                 log_file=worker.log_file,
             )

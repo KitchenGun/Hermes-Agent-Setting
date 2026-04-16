@@ -233,7 +233,7 @@ class HermesOrchestrator:
         subtasks: list[SubTask] = []
         previous_id: str | None = None
         for index, chunk in enumerate(chunks, start=1):
-            matched_skills = self.skill_registry.match_skills(chunk)
+            matched_skills = self._match_skills_for_chunk(chunk)
             required_skills = [skill.name for skill in matched_skills]
             expected_output = next((skill.expected_output for skill in matched_skills if skill.expected_output), "")
             subtask = SubTask(
@@ -246,6 +246,51 @@ class HermesOrchestrator:
             subtasks.append(subtask)
             previous_id = subtask.id
         return subtasks
+
+    def _match_skills_for_chunk(self, chunk: str) -> list[SkillDefinition]:
+        forced_skill_names = self._forced_skill_names(chunk)
+        if forced_skill_names:
+            forced_skills = [self.skill_registry.get_skill(name) for name in forced_skill_names]
+            forced_skills = [skill for skill in forced_skills if skill is not None]
+            if forced_skills:
+                return forced_skills
+        return self.skill_registry.match_skills(chunk)
+
+    def _forced_skill_names(self, task: str) -> list[str]:
+        normalized = " ".join(str(task or "").strip().lower().split())
+        if not normalized:
+            return []
+
+        compact = normalized.replace(" ", "")
+        has_unreal_mcp_marker = any(token in compact for token in ("panicroom", "unrealmcp")) or any(
+            phrase in normalized for phrase in ("panic room", "unreal mcp")
+        )
+        if has_unreal_mcp_marker:
+            return ["unreal-mcp", "unreal"]
+
+        has_unreal_scene_marker = any(
+            marker in normalized
+            for marker in (
+                "ue5",
+                "unreal",
+                "point light",
+                "spot light",
+                "directional light",
+                "sky light",
+                "skylight",
+                "blueprint",
+                "level",
+                "actor",
+            )
+        )
+        has_scene_action = any(
+            marker in normalized
+            for marker in ("spawn", "create", "place", "move", "set", "생성", "배치", "위치", "이동")
+        )
+        if has_unreal_scene_marker and has_scene_action:
+            return ["unreal"]
+
+        return []
 
     def _execute_subtask(
         self,
@@ -320,6 +365,9 @@ class HermesOrchestrator:
                 timezone_name=DEFAULT_TIMEZONE,
             )
 
+        if "unreal-mcp" in agent_config.skills:
+            return self._build_unreal_mcp_prompt(subtask, agent, user, context, dependency_results)
+
         sections = [
             "You are a Hermes worker handling one routed subtask.",
             "Prioritize execution. Use the available codebase and tools directly.",
@@ -356,6 +404,50 @@ class HermesOrchestrator:
         if context.strip():
             trimmed = context.strip()[:2000]
             sections.append("Conversation context:\n" + trimmed)
+        sections.append(f"Task:\n{subtask.task}")
+        return "\n\n".join(section for section in sections if section.strip())
+
+    def _build_unreal_mcp_prompt(
+        self,
+        subtask: SubTask,
+        agent: AgentDefinition | None,
+        user: str,
+        context: str,
+        dependency_results: dict[str, dict[str, Any]],
+    ) -> str:
+        sections = [
+            "You are a Hermes worker handling one routed subtask.",
+            "Execution first. Do the Unreal action directly and return only the final result.",
+            "Use minimal steps and avoid long explanations.",
+            "Local UnrealMCP facts:",
+            "- UE5 project plugin: D:/PanicRoom/Plugins/UnrealMCP/UnrealMCP.uplugin",
+            "- TCP listener: 127.0.0.1:13377",
+            "- Protocol: newline-delimited JSON",
+            "- Valid actor tool commands include create_actor, get_actor_properties, get_actors_in_level, set_actor_transform",
+            "Execution rules:",
+            "1. Prefer direct execution over planning.",
+            "2. If a direct MCP tool is unavailable in-session, use Python or shell to open TCP 127.0.0.1:13377 and send the command yourself.",
+            "3. For scene creation requests, validate connectivity quickly, execute the command, then verify the created actor/properties.",
+            "4. If execution fails, return the exact failure reason only.",
+            "5. Do not output a plan, checklist, or generic UE guidance.",
+        ]
+
+        if agent is not None:
+            sections.append(f"Assigned agent: {agent.name}")
+        if self._worker_rules:
+            sections.append(self._worker_rules)
+        if dependency_results:
+            summaries = []
+            for dep_id in subtask.depends_on:
+                dep = dependency_results.get(dep_id)
+                if dep and dep.get("result_text"):
+                    summaries.append(f"{dep_id}: {dep['result_text']}")
+            if summaries:
+                sections.append("Dependency results:\n" + "\n".join(summaries))
+        if user:
+            sections.append(f"Requested by: {user}")
+        if context.strip():
+            sections.append("Conversation context:\n" + context.strip()[:2000])
         sections.append(f"Task:\n{subtask.task}")
         return "\n\n".join(section for section in sections if section.strip())
 
