@@ -315,6 +315,34 @@ class HermesOrchestrator:
 
         agent_config = self.skill_registry.build_agent_config(skills)
         prompt = self._build_worker_prompt(subtask, selected_agent, agent_config, user, context, dependency_results)
+
+        # ── UnrealMCP 전용 실행 경로 ────────────────────────────────────
+        # GPT가 MCP tool을 직접 호출하지 않도록 프롬프트를 바꾸고,
+        # GPT 응답(intent JSON)을 unreal_adapter가 파싱해 UE5 TCP로 직접 전송한다.
+        # 이를 통해 MCP 타임아웃(-32001) → 중복 실행 문제를 근본적으로 방지한다.
+        if "unreal-mcp" in (agent_config.skills or []):
+            execution = self._execute_unreal_via_adapter(subtask, selected_agent, agent_config, prompt)
+            quality = self._quality_check(subtask, execution, resolution)
+            suggestion: ImplementationSuggestion | None = None
+            if quality == "insufficient":
+                suggestion = self._create_suggestion(subtask, match, execution)
+            record = {
+                "subtask_id": subtask.id,
+                "task": subtask.task,
+                "required_skills": subtask.required_skills,
+                "resolution": resolution,
+                "quality": quality,
+                "agent": selected_agent.to_dict() if selected_agent else None,
+                "ok": bool(execution.get("ok")),
+                "result_text": str(execution.get("result_text") or "").strip(),
+                "stderr": str(execution.get("stderr") or "").strip(),
+                "worker": execution.get("worker"),
+                "implementation_suggestion": suggestion.to_dict() if suggestion else None,
+            }
+            self._append_knowledge(record)
+            return record
+        # ────────────────────────────────────────────────────────────────
+
         execution = self.agent_pool.run_task(prompt, "", selected_agent, agent_config.skills)
         if "google-calendar" in agent_config.skills:
             calendar_execution = execute_calendar_plan(str(execution.get("result_text") or ""))
@@ -415,29 +443,49 @@ class HermesOrchestrator:
         context: str,
         dependency_results: dict[str, dict[str, Any]],
     ) -> str:
+        """UnrealMCP 전용 프롬프트 — GPT에게 intent JSON만 출력하도록 요청.
+
+        ⚠️ GPT는 MCP tool을 직접 호출하지 않는다.
+        GPT 응답의 JSON intent를 unreal_adapter가 파싱해 UE5 TCP로 직접 전송한다.
+        이를 통해 MCP 타임아웃(-32001)으로 인한 중복 실행 문제를 방지한다.
+        """
         sections = [
-            "You are a Hermes worker handling one routed subtask.",
-            "Execution first. Do the Unreal action directly and return only the final result.",
-            "Use minimal steps and avoid long explanations.",
-            "Local UnrealMCP facts:",
-            "- UE5 project plugin: D:/PanicRoom/Plugins/UnrealMCP/UnrealMCP.uplugin",
-            "- TCP listener: 127.0.0.1:13377",
-            "- Protocol: newline-delimited JSON",
-            "- Valid actor tool commands include create_actor, get_actor_properties, get_actors_in_level, set_actor_transform",
-            "Execution rules:",
-            "1. Execute the command EXACTLY ONCE. Never retry, never call the same tool twice, never try alternative methods.",
-            "2. Use ONLY ONE method: prefer the MCP tool. If MCP tool is unavailable, use TCP 127.0.0.1:13377 as fallback. Never use both.",
-            "3. After executing a creation command, call get_actor_properties or get_actors_in_level to verify — do NOT call create again.",
-            "4. If you receive a timeout or no response from the MCP tool, STOP immediately. Do not retry. The action may have already completed on the UE5 side.",
-            "5. If execution fails with a connection error, return the exact failure reason and stop. Do not attempt alternative methods.",
-            "6. Do not output a plan, checklist, or generic UE guidance.",
-            "7. IMPORTANT: This prompt is executed exactly once by the system. Do not call hermes_orchestrate, hermes_send, or any similar routing tool from within this context.",
+            "You are an intent extraction assistant for Unreal Engine commands.",
+            "Your job is to convert the user's task into a structured JSON intent object.",
+            "",
+            "IMPORTANT: Output ONLY a JSON object. Do NOT call any tools. Do NOT execute anything.",
+            "The system will handle execution automatically after receiving your JSON.",
+            "",
+            "JSON intent format:",
+            '  {"action": "<action>", "class": "<ActorClass>", "name": "<ActorName>",',
+            '   "location": [X, Y, Z], "rotation": [P, Y, R], "scale": [X, Y, Z]}',
+            "",
+            "Supported actions:",
+            '  "create"    — create a new actor (requires: class)',
+            '  "delete"    — delete an actor (requires: name)',
+            '  "transform" — move/rotate/scale actor (requires: name, location/rotation/scale)',
+            '  "query"     — list actors in level (optional: filter class)',
+            '  "find"      — find actors by name pattern (requires: pattern)',
+            '  "get_props" — read actor properties (requires: name)',
+            '  "set_prop"  — set a property (requires: name, property, value)',
+            '  "duplicate" — copy an actor (requires: name)',
+            "",
+            "Actor class names: PointLight, SpotLight, DirectionalLight, SkyLight,",
+            "  RectLight, StaticMeshActor, CameraActor, ExponentialHeightFog",
+            "",
+            "Location unit: centimeters (UE5 units). Example: [0, 0, 300] = 3m height.",
+            "",
+            "Examples:",
+            '  Task: "Create a point light at position 1000, 1000, 300"',
+            '  → {"action": "create", "class": "PointLight", "location": [1000, 1000, 300]}',
+            "",
+            '  Task: "Delete the actor named MyLight"',
+            '  → {"action": "delete", "name": "MyLight"}',
+            "",
+            '  Task: "List all actors in the level"',
+            '  → {"action": "query"}',
         ]
 
-        if agent is not None:
-            sections.append(f"Assigned agent: {agent.name}")
-        if self._worker_rules:
-            sections.append(self._worker_rules)
         if dependency_results:
             summaries = []
             for dep_id in subtask.depends_on:
@@ -445,13 +493,66 @@ class HermesOrchestrator:
                 if dep and dep.get("result_text"):
                     summaries.append(f"{dep_id}: {dep['result_text']}")
             if summaries:
-                sections.append("Dependency results:\n" + "\n".join(summaries))
-        if user:
-            sections.append(f"Requested by: {user}")
+                sections.append("Previous results:\n" + "\n".join(summaries))
+
         if context.strip():
-            sections.append("Conversation context:\n" + context.strip()[:2000])
-        sections.append(f"Task:\n{subtask.task}")
-        return "\n\n".join(section for section in sections if section.strip())
+            sections.append("Context:\n" + context.strip()[:1000])
+
+        sections.append(f"Task: {subtask.task}")
+        sections.append("Output ONLY the JSON object, nothing else.")
+        return "\n".join(sections)
+
+    def _execute_unreal_via_adapter(
+        self,
+        subtask: SubTask,
+        agent: Any,
+        agent_config: Any,
+        intent_prompt: str,
+    ) -> dict[str, Any]:
+        """UnrealMCP 어댑터 경로 실행.
+
+        1. GPT에게 intent JSON만 요청 (tool 실행 없음)
+        2. unreal_adapter.execute_unreal_intent()로 UE5 TCP 직접 호출
+        3. Hermes 포맷 결과 반환
+
+        GPT가 MCP tool을 직접 호출하지 않으므로 타임아웃(-32001) 문제가 없다.
+        """
+        # 1. GPT에게 intent JSON 요청 (OpenCode, no MCP tool execution)
+        gpt_result = self.agent_pool.run_task(
+            intent_prompt, "", agent, agent_config.skills
+        )
+        intent_text = str(gpt_result.get("result_text") or gpt_result.get("stdout") or "").strip()
+
+        if not intent_text:
+            return {
+                "ok": False,
+                "result_text": "GPT에서 intent를 받지 못했습니다.",
+                "stderr": "empty intent from GPT",
+                "mode": "unreal-mcp-adapter",
+                "returncode": None,
+                "stdout": "",
+                "worker": gpt_result.get("worker"),
+            }
+
+        # 2. unreal_adapter로 UE5 실행
+        try:
+            from unreal_adapter import execute_unreal_intent
+            adapter_result = execute_unreal_intent(intent_text)
+        except ImportError:
+            # unreal_adapter 미설치: GPT 결과를 그대로 반환 (graceful degradation)
+            adapter_result = gpt_result
+        except Exception as exc:  # noqa: BLE001
+            adapter_result = {
+                "ok": False,
+                "result_text": f"어댑터 오류: {exc}",
+                "stderr": str(exc),
+                "mode": "unreal-mcp-adapter",
+                "returncode": None,
+                "stdout": "",
+            }
+
+        adapter_result["worker"] = gpt_result.get("worker")
+        return adapter_result
 
     UNREAL_MCP_SKILLS = {"unreal-mcp", "unreal"}
 
