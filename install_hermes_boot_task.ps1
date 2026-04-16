@@ -24,7 +24,13 @@ $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$startupScript`""
 
-$trigger = New-ScheduledTaskTrigger -AtStartup
+$startupTrigger = New-ScheduledTaskTrigger -AtStartup
+$startupTrigger.Delay = "PT30S"
+
+$logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $UserId
+$logonTrigger.Delay = "PT15S"
+
+$triggers = @($startupTrigger, $logonTrigger)
 
 $taskPrincipal = New-ScheduledTaskPrincipal `
     -UserId $UserId `
@@ -36,12 +42,14 @@ $settings = New-ScheduledTaskSettingsSet `
     -DontStopIfGoingOnBatteries `
     -MultipleInstances Ignore `
     -StartWhenAvailable `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit (New-TimeSpan -Hours 72)
 
 Register-ScheduledTask `
     -TaskName $TaskName `
     -Action $action `
-    -Trigger $trigger `
+    -Trigger $triggers `
     -Principal $taskPrincipal `
     -Settings $settings `
     -Description "Start the local Hermes OpenCode MCP bridge at system startup" `

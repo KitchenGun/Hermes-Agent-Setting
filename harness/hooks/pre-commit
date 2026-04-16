@@ -1,0 +1,49 @@
+#!/bin/bash
+# pre-commit hook: token harness lint + garbage collection
+# Installed by: bash harness/scripts/setup.sh
+# Success is silent, failure is loud
+
+set -euo pipefail
+
+MAX_RETRIES=3
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+FAIL_LOG="$ROOT/harness/AGENTS.md"
+
+echo "[HARNESS] pre-commit running..."
+
+# --- 1. Lint (auto-fix loop) ---
+attempt=0
+while [ $attempt -lt $MAX_RETRIES ]; do
+  if bash "$ROOT/harness/scripts/lint.sh" --fix --quiet 2>/dev/null; then
+    break
+  fi
+  attempt=$((attempt + 1))
+  echo "[WARN] Auto-fix attempt $attempt/$MAX_RETRIES"
+done
+
+if [ $attempt -eq $MAX_RETRIES ]; then
+  echo "[FAIL] Lint auto-fix failed (${MAX_RETRIES} attempts)"
+  echo ""
+  bash "$ROOT/harness/scripts/lint.sh" 2>&1 | grep -E "^(ERROR|WARN)" || true
+  echo ""
+  echo "[NOTE] Record a new rule in harness/rules/"
+
+  DATE=$(date +%Y-%m-%d)
+  ERRORS=$(bash "$ROOT/harness/scripts/lint.sh" 2>&1 | grep -c "ERROR" || echo "0")
+  echo "<!-- ${DATE} | pre-commit lint failed (${ERRORS} errors) | review needed -->" >> "$FAIL_LOG"
+
+  exit 1
+fi
+
+# --- 2. Garbage collection ---
+if bash "$ROOT/harness/scripts/garbage-collect.sh" 2>/dev/null; then
+  :
+else
+  echo "[WARN] Garbage collection issues:"
+  bash "$ROOT/harness/scripts/garbage-collect.sh" 2>&1 | grep -E "^(STALE|DEAD|UNUSED|WARN)" || true
+fi
+
+# --- 3. Auto-stage fixed files ---
+git diff --name-only | xargs -r git add 2>/dev/null || true
+
+exit 0

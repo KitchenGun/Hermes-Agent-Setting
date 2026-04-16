@@ -1,1 +1,334 @@
-[]
+[
+  {
+    "suggestion_id": "suggest-20260416010540060098",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "6시부터7시",
+    "fallback_result_summary": "오늘 18:00~19:00로 `개인PT` 일정 추가했어요.",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "code-general-specialist",
+      "name": "Code-General Specialist",
+      "status": "active",
+      "role": "Code-General execution specialist",
+      "goal": "Handle tasks related to code-general safely and accurately.",
+      "backstory": "Specialized worker focused on code-general.",
+      "skills": [
+        "code-general",
+        "research",
+        "document"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "code-general",
+          "research",
+          "document"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T01:05:31Z",
+      "updated_at": "2026-04-16T01:05:31Z"
+    },
+    "suggested_skill": {
+      "name": "code-general",
+      "display_name": "Code-General",
+      "description": "Skill bundle for tasks related to code-general.",
+      "role": "Code-General specialist skill",
+      "goal": "Execute code-general work with clear outputs.",
+      "keywords": [
+        "code-general",
+        "research",
+        "document"
+      ],
+      "trigger_when": "Use when the task explicitly requires code-general.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/code-general/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/code-general-specialist/agent.json\n2. Create skills/code-general/skill.json\n3. Create skills/code-general/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": []
+  },
+  {
+    "suggestion_id": "suggest-20260416014607183946",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "https://careers.ncsoft.com/apply/list",
+    "fallback_result_summary": "I detect investigation intent - the goal is to extract current NCSoft 공고 data for a spreadsheet update, not modify this repo. My approach: collect delegated research, combine with direct evidence from the public careers site, then return only the actionable findings.",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T01:46:07Z",
+      "updated_at": "2026-04-16T01:46:07Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "generalist",
+      "code-reviewer",
+      "doc-writer"
+    ]
+  },
+  {
+    "suggestion_id": "suggest-20260416020346243793",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "공고리스트 업데이트",
+    "fallback_result_summary": "I’ve confirmed the target sheet is actually editable in-browser, so I’m moving to data collection/normalization and will attempt a direct sheet update from the crawled postings.",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T02:03:46Z",
+      "updated_at": "2026-04-16T02:03:46Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "generalist",
+      "code-reviewer",
+      "doc-writer"
+    ]
+  },
+  {
+    "suggestion_id": "suggest-20260416021928601700",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "공고 리스트 업데이트",
+    "fallback_result_summary": "",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T02:19:28Z",
+      "updated_at": "2026-04-16T02:19:28Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "generalist",
+      "code-reviewer",
+      "doc-writer"
+    ]
+  },
+  {
+    "suggestion_id": "suggest-20260416031323188006",
+    "status": "pending",
+    "reason": "Fallback execution was insufficient for the routed task.",
+    "task_description": "공고 맞춤으로 찾아줘",
+    "fallback_result_summary": "",
+    "quality_assessment": "Fallback result did not meet the expected confidence threshold.",
+    "suggested_agent": {
+      "id": "custom-skill-specialist",
+      "name": "Custom-Skill Specialist",
+      "status": "active",
+      "role": "Custom-Skill execution specialist",
+      "goal": "Handle tasks related to custom-skill safely and accurately.",
+      "backstory": "Specialized worker focused on custom-skill.",
+      "skills": [
+        "custom-skill"
+      ],
+      "model": "openai/gpt-5.4",
+      "variant": "medium",
+      "port": null,
+      "allowed_delegations": [
+        "generalist",
+        "doc-writer",
+        "code-reviewer"
+      ],
+      "max_concurrent_tasks": 1,
+      "capabilities": {
+        "domains": [
+          "custom-skill"
+        ],
+        "tools": [],
+        "mcp_servers": []
+      },
+      "health_check": {
+        "enabled": true,
+        "interval_s": 30,
+        "max_failures": 3
+      },
+      "created_at": "2026-04-16T03:13:23Z",
+      "updated_at": "2026-04-16T03:13:23Z"
+    },
+    "suggested_skill": {
+      "name": "custom-skill",
+      "display_name": "Custom-Skill",
+      "description": "Skill bundle for tasks related to custom-skill.",
+      "role": "Custom-Skill specialist skill",
+      "goal": "Execute custom-skill work with clear outputs.",
+      "keywords": [
+        "custom-skill"
+      ],
+      "trigger_when": "Use when the task explicitly requires custom-skill.",
+      "skip_when": "Skip when a more precise existing specialist already covers the task.",
+      "system_prompt_path": "skills/custom-skill/system_prompt.md",
+      "reference_paths": [],
+      "mcp_servers": [],
+      "required_tools": [],
+      "expected_output": "Concrete execution result or implementation guidance.",
+      "priority": 8
+    },
+    "setup_guide": "1. Create agents/custom-skill-specialist/agent.json\n2. Create skills/custom-skill/skill.json\n3. Create skills/custom-skill/system_prompt.md\n4. Reload the Hermes registry",
+    "similar_agents": [
+      "generalist",
+      "code-reviewer",
+      "doc-writer"
+    ]
+  }
+]
