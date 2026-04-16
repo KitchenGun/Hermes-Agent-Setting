@@ -158,7 +158,8 @@ def build_hermes_task_prompt(task: str, user: str, context: str = "") -> str:
     payload = json.dumps({"task": str(task).strip(), "user": str(user).strip()}, ensure_ascii=False, indent=2)
     prompt = f"{HERMES_AGENT_SYSTEM_PROMPT}\n\nExecute this task now:\n{payload}"
     if str(context).strip():
-        prompt += f"\n\nRelevant conversation context:\n{str(context).strip()}"
+        trimmed = str(context).strip()[:2000]
+        prompt += f"\n\nRelevant conversation context:\n{trimmed}"
     return prompt
 
 
@@ -638,7 +639,7 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
             context=payload["context"],
             timezone_name=DEFAULT_TIMEZONE,
         )
-        adapter_result = adapter.send(prompt, payload["context"])
+        adapter_result = adapter.send(prompt, "")
     elif _is_gamejob_update_request(parsed_task):
         adapter_result = _run_gamejob_rawdata_update()
     elif _is_gamejob_match_request(parsed_task):
@@ -649,7 +650,7 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
         adapter_result = get_default_orchestrator().orchestrate(parsed_task, payload["user"], payload["context"])
     else:
         prompt = build_hermes_task_prompt(parsed_task, payload["user"], payload["context"])
-        adapter_result = adapter.send(prompt, payload["context"])
+        adapter_result = adapter.send(prompt, "")
     normalized = normalize_discord_execution(adapter_result, parsed_task)
     if not normalized["task"]:
         normalized["task"] = parsed_task

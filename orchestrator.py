@@ -264,7 +264,7 @@ class HermesOrchestrator:
 
         agent_config = self.skill_registry.build_agent_config(skills)
         prompt = self._build_worker_prompt(subtask, selected_agent, agent_config, user, context, dependency_results)
-        execution = self.agent_pool.run_task(prompt, context, selected_agent, agent_config.skills)
+        execution = self.agent_pool.run_task(prompt, "", selected_agent, agent_config.skills)
         if "google-calendar" in agent_config.skills:
             calendar_execution = execute_calendar_plan(str(execution.get("result_text") or ""))
             if calendar_execution is not None:
@@ -346,7 +346,8 @@ class HermesOrchestrator:
         if user:
             sections.append(f"Requested by: {user}")
         if context.strip():
-            sections.append("Conversation context:\n" + context.strip())
+            trimmed = context.strip()[:2000]
+            sections.append("Conversation context:\n" + trimmed)
         sections.append(f"Task:\n{subtask.task}")
         sections.append("Return the final answer only. Keep it concise and high signal.")
         return "\n\n".join(section for section in sections if section.strip())
