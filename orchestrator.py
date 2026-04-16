@@ -24,6 +24,7 @@ DEFAULT_AGENTS_DIR = os.getenv("HERMES_AGENT_DIR", "agents").strip() or "agents"
 DEFAULT_KNOWLEDGE_DIR = os.getenv("HERMES_KNOWLEDGE_DIR", "knowledge").strip() or "knowledge"
 DEFAULT_REACTIONS_PATH = os.getenv("HERMES_REACTIONS_PATH", "reactions.json").strip() or "reactions.json"
 DEFAULT_HOT_RELOAD = os.getenv("HERMES_REGISTRY_HOT_RELOAD", "true").strip().lower() == "true"
+WORKER_RULES_PATH = Path(os.getenv("HERMES_WORKER_RULES", "harness/worker_rules.md"))
 SUGGESTIONS_FILE = "suggestions.json"
 GENERIC_SUPPORT_SKILLS = {"code-general", "research", "document", "google-docs"}
 
@@ -87,6 +88,7 @@ class HermesOrchestrator:
         self._lock = threading.Lock()
         self.reactions: dict[str, Any] = {}
         self.pending_suggestions: dict[str, ImplementationSuggestion] = {}
+        self._worker_rules: str = ""
         self.reload()
 
     def reload(self) -> None:
@@ -95,6 +97,10 @@ class HermesOrchestrator:
         self.reactions = self._load_reactions()
         self.pending_suggestions = self._load_suggestions()
         self.knowledge_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self._worker_rules = WORKER_RULES_PATH.read_text(encoding="utf-8").strip()
+        except Exception:
+            self._worker_rules = ""
 
     def list_agents(self) -> list[dict[str, Any]]:
         if DEFAULT_HOT_RELOAD:
@@ -318,6 +324,8 @@ class HermesOrchestrator:
             "You are a Hermes worker handling one routed subtask.",
             "Prioritize execution. Use the available codebase and tools directly.",
         ]
+        if self._worker_rules:
+            sections.append(self._worker_rules)
         if agent is not None:
             sections.append(f"Assigned agent: {agent.name}")
             if agent.role:
@@ -349,7 +357,6 @@ class HermesOrchestrator:
             trimmed = context.strip()[:2000]
             sections.append("Conversation context:\n" + trimmed)
         sections.append(f"Task:\n{subtask.task}")
-        sections.append("Return the final answer only. Keep it concise and high signal.")
         return "\n\n".join(section for section in sections if section.strip())
 
     def _quality_check(self, subtask: SubTask, result: dict[str, Any], resolution: str) -> str:

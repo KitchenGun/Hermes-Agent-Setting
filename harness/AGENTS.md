@@ -27,3 +27,4 @@
 ## 실패 로그
 <!-- 예시: 2026-04-16 | agent pool 재탐색으로 토큰 낭비 | CLAUDE.md 핵심 파일 목록 보강 -->
 2026-04-16 | context 이중 전송 버그 | _build_worker_prompt에서 이미 포함한 context를 run_task/adapter.send에도 전달 → opencode_send가 한 번 더 붙임. orchestrator.py:267, discord_task_flow.py:641,652 수정. context 2000자 트림 추가.
+2026-04-16 | GPT 워커 하네스 미적용 | CLAUDE.md/harness/rules는 Claude Code 전용이라 GPT 워커에 규칙 미전달. harness/worker_rules.md 생성 후 _build_worker_prompt에 주입하여 모든 모델에 적용.
