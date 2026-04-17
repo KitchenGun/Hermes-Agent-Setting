@@ -23,10 +23,12 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import os
 import re
 import time
 import uuid
 import concurrent.futures
+from pathlib import Path
 from typing import Any
 
 
@@ -37,6 +39,11 @@ from typing import Any
 _UE5_HOST = "127.0.0.1"
 _UE5_PORT = 13377
 _UE5_TIMEOUT = 30.0
+_SUMMARY_LIMIT = 10
+_GRAPH_NODE_LIMIT = 20
+_LOG_TAIL_LIMIT = 200
+_DEFAULT_PROJECT_DIR = Path(os.getenv("HERMES_UNREAL_PROJECT_DIR", r"D:\PanicRoom"))
+_DEFAULT_LOG_DIR = Path(os.getenv("HERMES_UNREAL_LOG_DIR", str(_DEFAULT_PROJECT_DIR / "Saved" / "Logs")))
 
 # ---------------------------------------------------------------------------
 # 멱등성 캐시 (프로세스 내 전역)
@@ -239,6 +246,78 @@ class _ParseError(ValueError):
     pass
 
 
+def _limit_int(value: Any, default: int, minimum: int = 1, maximum: int = _SUMMARY_LIMIT) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(parsed, maximum))
+
+
+def _tail_log_lines(log_path: Path, tail_lines: int, contains: str = "") -> dict[str, Any]:
+    if not log_path.exists():
+        raise FileNotFoundError(f"log file not found: {log_path}")
+
+    lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    if contains.strip():
+        needle = contains.strip().lower()
+        lines = [line for line in lines if needle in line.lower()]
+    selected = lines[-tail_lines:]
+    return {
+        "log_path": str(log_path),
+        "tail_lines": tail_lines,
+        "contains": contains.strip(),
+        "line_count": len(selected),
+        "lines": selected,
+    }
+
+
+def _execute_local_tool(tool_name: str, params: dict[str, Any]) -> dict[str, Any] | None:
+    if tool_name != "tail_editor_log":
+        return None
+
+    tail_lines = _limit_int(params.get("tail_lines"), default=80, maximum=_LOG_TAIL_LIMIT)
+    raw_path = str(params.get("log_path", "")).strip()
+    contains = str(params.get("contains", "")).strip()
+
+    if raw_path:
+        log_path = Path(raw_path)
+    else:
+        candidates = sorted(_DEFAULT_LOG_DIR.glob("*.log"), key=lambda item: item.stat().st_mtime, reverse=True)
+        if not candidates:
+            raise FileNotFoundError(f"no log files found in {_DEFAULT_LOG_DIR}")
+        log_path = candidates[0]
+
+    return {
+        "success": True,
+        "result": _tail_log_lines(log_path, tail_lines=tail_lines, contains=contains),
+        "error": None,
+    }
+
+
+def _validate_tool_request(tool_name: str, params: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+
+    if tool_name == "get_actors_in_level" and not str(params.get("actor_class_filter", "")).strip():
+        errors.append("actor_class_filter is required for actor list queries")
+    if tool_name == "search_assets" and not str(params.get("query", "")).strip() and not str(params.get("asset_class_filter", "")).strip():
+        errors.append("query or asset_class_filter is required for asset search")
+    if tool_name == "get_asset_details" and not str(params.get("asset_path", "")).strip():
+        errors.append("asset_path is required")
+    if tool_name == "get_blueprint_graph":
+        if not str(params.get("blueprint_name", "")).strip():
+            errors.append("blueprint_name is required")
+        if not str(params.get("graph_name", "")).strip():
+            errors.append("graph_name is required")
+    if tool_name == "tail_editor_log":
+        if "tail_lines" in params and _limit_int(params.get("tail_lines"), 0, minimum=0, maximum=_LOG_TAIL_LIMIT) <= 0:
+            errors.append("tail_lines must be between 1 and 200")
+    if tool_name == "inspect_uobject" and not str(params.get("object_path", "")).strip():
+        errors.append("object_path is required")
+
+    return errors
+
+
 def _intent_to_tool(intent: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     """intent dict → (tool_name, params).
 
@@ -248,7 +327,8 @@ def _intent_to_tool(intent: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     # 직접 tool 지정
     if "tool" in intent:
         tool_name = str(intent["tool"]).strip()
-        params = {k: v for k, v in intent.items() if k not in ("tool", "action")}
+        raw_params = intent.get("params", {})
+        params = raw_params if isinstance(raw_params, dict) else {}
         return tool_name, params
 
     raw_action = str(intent.get("action", "")).strip().lower()
@@ -370,6 +450,61 @@ def _summarize(tool_name: str, result: dict[str, Any]) -> str:
     if tool_name == "set_actor_transform":
         return f"트랜스폼 업데이트: {_summarize('create_actor', result)}"
 
+    if tool_name == "search_assets":
+        assets = result.get("assets", [])
+        count = int(result.get("count", len(assets)))
+        head = assets[:_SUMMARY_LIMIT]
+        listed = [
+            f"{item.get('name', '?')}<{item.get('asset_class', '?')}>"
+            for item in head
+            if isinstance(item, dict)
+        ]
+        suffix = f" (+{count - len(head)})" if count > len(head) else ""
+        return f"assets={count}: {', '.join(listed)}{suffix}" if listed else f"assets={count}"
+
+    if tool_name == "get_asset_details":
+        tags = result.get("tags", {})
+        keys = list(tags.keys())[:_SUMMARY_LIMIT] if isinstance(tags, dict) else []
+        parts = [
+            f"name={result.get('name', '')}",
+            f"class={result.get('asset_class', '')}",
+            f"path={result.get('object_path', '')}",
+        ]
+        if keys:
+            parts.append("tags=" + ", ".join(keys))
+        return ", ".join(part for part in parts if part and not part.endswith("="))
+
+    if tool_name == "get_blueprint_graph":
+        nodes = result.get("nodes", [])
+        limit = _limit_int(result.get("node_limit"), default=_GRAPH_NODE_LIMIT, maximum=_GRAPH_NODE_LIMIT)
+        head = nodes[:limit]
+        listed = [
+            str(node.get("node_title") or node.get("node_class") or "?")
+            for node in head
+            if isinstance(node, dict)
+        ]
+        suffix = f" (+{len(nodes) - len(head)} more)" if len(nodes) > len(head) else ""
+        return (
+            f"{result.get('blueprint_name', '')}:{result.get('graph_name', '')} "
+            f"nodes={result.get('node_count', len(nodes))} "
+            f"{', '.join(listed)}{suffix}"
+        ).strip()
+
+    if tool_name == "inspect_uobject":
+        properties = result.get("properties", [])
+        functions = result.get("functions", [])
+        parts = [
+            f"object={result.get('object_path', result.get('class_name', ''))}",
+            f"properties={len(properties) if isinstance(properties, list) else 0}",
+            f"functions={len(functions) if isinstance(functions, list) else 0}",
+        ]
+        return ", ".join(parts)
+
+    if tool_name == "tail_editor_log":
+        lines = result.get("lines", [])
+        preview = " | ".join(str(line) for line in lines[-5:])
+        return f"log={result.get('line_count', len(lines))}: {preview}".strip()
+
     return json.dumps(result, ensure_ascii=False, indent=None)
 
 
@@ -461,12 +596,37 @@ def execute_unreal_intent(
         )
 
     # 2. Intent → ToolCall
+    if bool(intent.get("invalid")):
+        reason = str(intent.get("reason", "")).strip() or "insufficient information"
+        missing = intent.get("missing", [])
+        suffix = f" missing={', '.join(str(item) for item in missing)}" if isinstance(missing, list) and missing else ""
+        return _make_hermes(ok=False, result_text=f"{reason}{suffix}", stderr=f"{reason}{suffix}")
+
     try:
         tool_name, params = _intent_to_tool(intent)
     except _ParseError as exc:
         return _make_hermes(ok=False, result_text=str(exc), stderr=str(exc))
 
     # 3. 멱등성 체크
+    if bool(intent.get("invalid")):
+        reason = str(intent.get("reason", "")).strip() or "insufficient information"
+        missing = intent.get("missing", [])
+        suffix = f" missing={', '.join(str(item) for item in missing)}" if isinstance(missing, list) and missing else ""
+        return _make_hermes(ok=False, result_text=f"{reason}{suffix}", stderr=f"{reason}{suffix}")
+
+    validation_errors = _validate_tool_request(tool_name, params)
+    if validation_errors:
+        message = "insufficient information: " + "; ".join(validation_errors)
+        return _make_hermes(ok=False, result_text=message, stderr=message)
+
+    try:
+        local_response = _execute_local_tool(tool_name, params)
+    except Exception as exc:  # noqa: BLE001
+        message = f"local tool error: {exc}"
+        return _make_hermes(ok=False, result_text=message, stderr=message)
+    if local_response is not None:
+        return _hermes_from_ue5_response(tool_name, local_response)
+
     idem_key: str | None = None
     if tool_name in _IDEMPOTENT_TOOLS:
         idem_key = _idem_key(tool_name, params)
@@ -495,6 +655,8 @@ def execute_unreal_intent(
     # 5. 멱등성 결과 기록
     if idem_key is not None:
         _idem_record(idem_key, json.dumps(response, ensure_ascii=False))
+
+    return _hermes_from_ue5_response(tool_name, response)
 
     # 6. Hermes 포맷 변환
     return _hermes_from_ue5_response(tool_name, response)

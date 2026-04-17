@@ -11,11 +11,15 @@ from pathlib import Path
 from typing import Any
 
 from discord_task_flow import execute_discord_task
+from codex_backend import send as codex_send
+from codex_backend import start as codex_start
+from codex_backend import status as codex_status
+from codex_backend import stop as codex_stop
 from env_loader import load_env_file
-from opencode_backend import send as opencode_send
-from opencode_backend import start as opencode_start
-from opencode_backend import status as opencode_status
-from opencode_backend import stop as opencode_stop
+from hermes_backend import send as hermes_send
+from hermes_backend import start as hermes_start
+from hermes_backend import status as hermes_status
+from hermes_backend import stop as hermes_stop
 from orchestrator import get_default_orchestrator
 
 
@@ -23,7 +27,7 @@ HOST = "127.0.0.1"
 PORT = 8765
 MCP_PATH = "/mcp"
 LOG_PATH = r"C:\Users\kang9\.config\opencode\hermes_bridge_http.log"
-SERVER_NAME = "hermes-opencode-http-bridge"
+SERVER_NAME = "hermes-http-bridge"
 SERVER_VERSION = "0.1.0"
 PROTOCOL_VERSION = "2025-03-26"
 GUI_DIR = Path(__file__).parent / "gui"
@@ -47,7 +51,7 @@ def add_event(kind: str, payload: dict[str, Any]) -> None:
 
 class HermesAdapter:
     def __init__(self) -> None:
-        self.mode = os.getenv("HERMES_MODE", "opencode").strip().lower()
+        self.mode = os.getenv("HERMES_MODE", "codex").strip().lower()
         self.mock_running = False
         self.mock_last_prompt = ""
 
@@ -71,8 +75,13 @@ class HermesAdapter:
             add_event("status", result)
             return result
 
-        if self.mode == "opencode":
-            result = opencode_status()
+        if self.mode == "hermes":
+            result = hermes_status()
+            add_event("status", result)
+            return result
+
+        if self.mode == "codex":
+            result = codex_status()
             add_event("status", result)
             return result
 
@@ -102,8 +111,13 @@ class HermesAdapter:
             add_event("start", result)
             return result
 
-        if self.mode == "opencode":
-            result = opencode_start()
+        if self.mode == "hermes":
+            result = hermes_start()
+            add_event("start", result)
+            return result
+
+        if self.mode == "codex":
+            result = codex_start()
             add_event("start", result)
             return result
 
@@ -136,8 +150,13 @@ class HermesAdapter:
             add_event("send", result)
             return result
 
-        if self.mode == "opencode":
-            result = opencode_send(prompt, context)
+        if self.mode == "hermes":
+            result = hermes_send(prompt, context)
+            add_event("send", result)
+            return result
+
+        if self.mode == "codex":
+            result = codex_send(prompt, context)
             add_event("send", result)
             return result
 
@@ -167,8 +186,13 @@ class HermesAdapter:
             add_event("stop", result)
             return result
 
-        if self.mode == "opencode":
-            result = opencode_stop()
+        if self.mode == "hermes":
+            result = hermes_stop()
+            add_event("stop", result)
+            return result
+
+        if self.mode == "codex":
+            result = codex_stop()
             add_event("stop", result)
             return result
 

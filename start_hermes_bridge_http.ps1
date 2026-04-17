@@ -11,6 +11,6 @@ if ($existing) {
 }
 
 if (-not $env:HERMES_MODE) {
-    $env:HERMES_MODE = "opencode"
+    $env:HERMES_MODE = "codex"
 }
 Start-Process -FilePath $pythonw -ArgumentList @($script) -WorkingDirectory $projectRoot -WindowStyle Hidden

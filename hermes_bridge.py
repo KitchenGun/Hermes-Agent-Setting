@@ -8,15 +8,19 @@ import urllib.request
 from typing import Any
 
 from discord_task_flow import execute_discord_task
+from codex_backend import send as codex_send
+from codex_backend import start as codex_start
+from codex_backend import status as codex_status
+from codex_backend import stop as codex_stop
 from env_loader import load_env_file
-from opencode_backend import send as opencode_send
-from opencode_backend import start as opencode_start
-from opencode_backend import status as opencode_status
-from opencode_backend import stop as opencode_stop
+from hermes_backend import send as hermes_send
+from hermes_backend import start as hermes_start
+from hermes_backend import status as hermes_status
+from hermes_backend import stop as hermes_stop
 from orchestrator import get_default_orchestrator
 
 
-SERVER_NAME = "hermes-opencode-bridge"
+SERVER_NAME = "hermes-bridge"
 SERVER_VERSION = "0.1.0"
 PROTOCOL_VERSION = "2025-03-26"
 LOG_PATH = r"C:\Users\kang9\.config\opencode\hermes_bridge.log"
@@ -32,7 +36,7 @@ def log(message: str) -> None:
 
 class HermesAdapter:
     def __init__(self) -> None:
-        self.mode = os.getenv("HERMES_MODE", "opencode").strip().lower()
+        self.mode = os.getenv("HERMES_MODE", "codex").strip().lower()
         self.mock_running = False
         self.mock_last_prompt = ""
 
@@ -54,8 +58,11 @@ class HermesAdapter:
                 }
             return self._run_command(command)
 
-        if self.mode == "opencode":
-            return opencode_status()
+        if self.mode == "hermes":
+            return hermes_status()
+
+        if self.mode == "codex":
+            return codex_status()
 
         if self.mode == "http":
             return self._http_request("GET", "/status")
@@ -73,8 +80,11 @@ class HermesAdapter:
                 return {"mode": self.mode, "started": False, "message": "HERMES_START_COMMAND is not set"}
             return self._run_command(command)
 
-        if self.mode == "opencode":
-            return opencode_start()
+        if self.mode == "hermes":
+            return hermes_start()
+
+        if self.mode == "codex":
+            return codex_start()
 
         if self.mode == "http":
             return self._http_request("POST", "/start", {})
@@ -102,8 +112,11 @@ class HermesAdapter:
                 full_command += " " + shlex.quote(context)
             return self._run_command(full_command)
 
-        if self.mode == "opencode":
-            return opencode_send(prompt, context)
+        if self.mode == "hermes":
+            return hermes_send(prompt, context)
+
+        if self.mode == "codex":
+            return codex_send(prompt, context)
 
         if self.mode == "http":
             return self._http_request("POST", "/send", {"prompt": prompt, "context": context})
@@ -121,8 +134,11 @@ class HermesAdapter:
                 return {"mode": self.mode, "stopped": False, "message": "HERMES_STOP_COMMAND is not set"}
             return self._run_command(command)
 
-        if self.mode == "opencode":
-            return opencode_stop()
+        if self.mode == "hermes":
+            return hermes_stop()
+
+        if self.mode == "codex":
+            return codex_stop()
 
         if self.mode == "http":
             return self._http_request("POST", "/stop", {})

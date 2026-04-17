@@ -637,7 +637,7 @@ def execute_discord_task(adapter: Any, user: str, channel: str, message: str, co
     _task_lower = parsed_task.lower()
     _is_unreal_request = any(kw in _task_lower for kw in _unreal_keywords) and any(ac in _task_lower for ac in _unreal_actions)
 
-    use_orchestrator = getattr(adapter, "mode", "").strip().lower() == "opencode" and not is_calendar_request(parsed_task)
+    use_orchestrator = getattr(adapter, "mode", "").strip().lower() in {"hermes", "opencode", "codex"} and not is_calendar_request(parsed_task)
 
     if is_calendar_request(parsed_task):
         prompt = build_calendar_manager_execution_prompt(

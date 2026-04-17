@@ -211,7 +211,11 @@ class HermesOrchestrator:
                     dependency_results[str(result["subtask_id"])] = result
 
         result_text = self._synthesize_results(task, ordered_results)
-        ok = all(bool(item.get("ok")) for item in ordered_results) if ordered_results else False
+        ok = (
+            all(bool(item.get("ok") or item.get("timed_out")) for item in ordered_results)
+            if ordered_results
+            else False
+        )
         return {
             "mode": "orchestrator",
             "ok": ok,
@@ -288,7 +292,9 @@ class HermesOrchestrator:
             for marker in ("spawn", "create", "place", "move", "set", "생성", "배치", "위치", "이동")
         )
         if has_unreal_scene_marker and has_scene_action:
-            return ["unreal"]
+            # Route UE5 scene mutations through the UnrealMCP adapter path.
+            # This avoids duplicate side effects when direct MCP execution times out.
+            return ["unreal-mcp", "unreal"]
 
         return []
 
@@ -450,15 +456,26 @@ class HermesOrchestrator:
         이를 통해 MCP 타임아웃(-32001)으로 인한 중복 실행 문제를 방지한다.
         """
         sections = [
-            "You are an intent extraction assistant for Unreal Engine commands.",
-            "Your job is to convert the user's task into a structured JSON intent object.",
+            "You are preparing a Codex Unreal MCP intent.",
+            "Output ONLY one JSON object.",
             "",
-            "IMPORTANT: Output ONLY a JSON object. Do NOT call any tools. Do NOT execute anything.",
-            "The system will handle execution automatically after receiving your JSON.",
+            "Do not call tools. Do not explain.",
+            "The system will execute after receiving your JSON.",
             "",
-            "JSON intent format:",
-            '  {"action": "<action>", "class": "<ActorClass>", "name": "<ActorName>",',
-            '   "location": [X, Y, Z], "rotation": [P, Y, R], "scale": [X, Y, Z]}',
+            "If required info is missing, output:",
+            '  {"invalid": true, "reason": "...", "missing": ["field"]}',
+            "",
+            "Use narrow, summary-first requests.",
+            "Never request full logs, full asset dumps, full actor lists, or full blueprint graphs.",
+            "For assets, require a query or exact asset_path.",
+            "For graphs, require blueprint_name and explicit graph_name.",
+            "For logs, use tail_editor_log with tail_lines <= 200 and optional contains.",
+            "",
+            "Actor intent format:",
+            '  {"action":"create|delete|transform|query|find|get_props|set_prop|duplicate", ...}',
+            "",
+            "Direct tool format:",
+            '  {"tool":"search_assets|get_asset_details|get_blueprint_graph|tail_editor_log|inspect_uobject", "params": {...}}',
             "",
             "Supported actions:",
             '  "create"    — create a new actor (requires: class)',
@@ -470,19 +487,14 @@ class HermesOrchestrator:
             '  "set_prop"  — set a property (requires: name, property, value)',
             '  "duplicate" — copy an actor (requires: name)',
             "",
-            "Actor class names: PointLight, SpotLight, DirectionalLight, SkyLight,",
-            "  RectLight, StaticMeshActor, CameraActor, ExponentialHeightFog",
-            "",
-            "Location unit: centimeters (UE5 units). Example: [0, 0, 300] = 3m height.",
-            "",
             "Examples:",
-            '  Task: "Create a point light at position 1000, 1000, 300"',
+            '  {"action":"create","class":"PointLight","location":[1000,1000,300]}',
             '  → {"action": "create", "class": "PointLight", "location": [1000, 1000, 300]}',
             "",
-            '  Task: "Delete the actor named MyLight"',
+            '  {"tool":"get_blueprint_graph","params":{"blueprint_name":"BP_EnemyAI","graph_name":"EventGraph","node_limit":20}}',
             '  → {"action": "delete", "name": "MyLight"}',
             "",
-            '  Task: "List all actors in the level"',
+            '  {"tool":"tail_editor_log","params":{"tail_lines":80,"contains":"Error"}}',
             '  → {"action": "query"}',
         ]
 
@@ -527,7 +539,7 @@ class HermesOrchestrator:
             return {
                 "ok": False,
                 "result_text": "GPT에서 intent를 받지 못했습니다.",
-                "stderr": "empty intent from GPT",
+                "stderr": "empty intent from Codex",
                 "mode": "unreal-mcp-adapter",
                 "returncode": None,
                 "stdout": "",
