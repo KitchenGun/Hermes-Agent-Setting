@@ -13,17 +13,24 @@ try {
     Write-Host "[WARN] LM Studio 응답 없음. 먼저 LM Studio를 실행하세요." -ForegroundColor Yellow
 }
 
-# 환경 변수
+# 환경 변수 (.env 파일 로드)
+$envFile = Join-Path $PSScriptRoot ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -match '^\s*[^#]\S+=\S*' } | ForEach-Object {
+        $k, $v = $_ -split '=', 2
+        [System.Environment]::SetEnvironmentVariable($k.Trim(), $v.Trim(), 'Process')
+    }
+    Write-Host "[OK] .env 로드됨" -ForegroundColor Green
+} else {
+    Write-Host "[WARN] .env 파일 없음: $envFile" -ForegroundColor Yellow
+}
+
 $env:API_SERVER_ENABLED              = 'true'
 $env:API_SERVER_PORT                 = '8642'
 $env:API_SERVER_HOST                 = '127.0.0.1'
-$env:DISCORD_BOT_TOKEN               = 'REDACTED'
 $env:DISCORD_ALLOW_ALL_USERS         = 'true'
 $env:DISCORD_DISABLE_SKILL_COMMANDS  = 'true'
 $env:GATEWAY_ALLOW_ALL_USERS         = 'true'
-$env:OPENAI_BASE_URL                 = 'http://127.0.0.1:1234/v1'
-$env:OPENAI_API_KEY                  = 'lm-studio'
-$env:HERMES_CODEX_MODEL              = 'qwen/qwen2.5-coder-14b'
 
 # 기존 Gateway 종료
 $old = (Get-NetTCPConnection -LocalPort 8642 -ErrorAction SilentlyContinue).OwningProcess
